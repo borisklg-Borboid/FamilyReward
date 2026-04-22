@@ -16,10 +16,9 @@
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background: #0f172a; 
             background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
-            color: white;
-            min-height: 100vh;
+            color: white; min-height: 100vh;
         }
-        .fortnite-font { font-weight: 800; text-transform: uppercase; letter-spacing: -0.02em; }
+        .fortnite-font { font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; }
         .card-common { background: linear-gradient(135deg, #374151 0%, #111827 100%); border-top: 4px solid var(--common); }
         .card-uncommon { background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); border-top: 4px solid var(--uncommon); }
         .card-epic { background: linear-gradient(135deg, #581c87 0%, #2e1065 100%); border-top: 4px solid var(--epic); }
@@ -30,58 +29,70 @@
             transform: rotate(45deg); animation: shine 3s infinite;
         }
         @keyframes shine { 0% { margin-left: -100%; } 100% { margin-left: 100%; } }
-        .timer-flash { animation: flash 1s infinite; }
-        @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .card-completed { background: #0f172a !important; border-top: 4px solid #1e293b !important; opacity: 0.5; filter: grayscale(1); }
+        .card-failed { background: #1e293b !important; border-top: 4px solid #ef4444 !important; opacity: 0.7; }
         [v-cloak] { display: none; }
     </style>
 </head>
 <body>
     <div id="app" v-cloak class="min-h-screen flex flex-col max-w-md mx-auto pb-24 px-4">
         
-        <header v-if="familyId" class="py-6 flex justify-between items-center text-white">
+        <header v-if="familyId" class="py-6 flex justify-between items-center">
             <div class="flex flex-col">
                 <h1 class="fortnite-font text-2xl italic tracking-tighter">BATTLE PASS</h1>
                 <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest">{{ familyName }}</p>
             </div>
-            <button @click="logout" class="text-slate-500 text-[10px] font-black bg-slate-800 px-3 py-1 rounded-lg uppercase tracking-widest">Quit Game</button>
+            <button @click="logout" class="text-slate-500 text-[10px] font-black bg-slate-800 px-3 py-1 rounded-lg uppercase">Quit</button>
         </header>
 
-        <section v-if="familyId" class="mb-8 space-y-4">
-            <div v-if="role !== 'admin'">
-                <div class="flex justify-between items-end mb-2 px-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+        <section v-if="familyId" class="mb-6 space-y-3">
+            <div v-if="role !== 'admin'" class="bg-slate-900/50 p-4 rounded-3xl border border-white/5">
+                <div class="flex justify-between items-end mb-2 px-1 text-[10px] font-black uppercase text-slate-400">
                     <span class="text-yellow-400">Level {{ Math.floor(personalCredits / 10) }}</span>
                     <span>{{ personalCredits }} XP</span>
                 </div>
-                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                     <div class="h-full bg-yellow-400 transition-all duration-1000" :style="{ width: (personalCredits % 10) * 10 + '%' }"></div>
                 </div>
             </div>
 
             <div class="bg-blue-600/10 p-4 rounded-3xl border border-blue-500/20">
                 <div class="flex justify-between items-center mb-2">
-                    <span class="fortnite-font text-[10px] text-blue-400">Objective: {{ familyGoal || 'TBA' }}</span>
+                    <span class="fortnite-font text-[10px] text-blue-400 italic">Squad Target: {{ familyGoal || 'TBA' }}</span>
                     <span class="fortnite-font text-[10px]">{{ familyPot }} / {{ familyGoalAmount || 100 }}</span>
                 </div>
-                <div class="w-full h-4 bg-slate-900 rounded-full overflow-hidden border border-blue-900/30 p-0.5">
+                <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-blue-900/30 p-0.5">
                     <div class="h-full rounded-full transition-all duration-1000" 
-                         :class="familyPot >= (familyGoalAmount || 100) ? 'bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]' : 'bg-blue-500'"
+                         :class="familyPot >= (familyGoalAmount || 100) ? 'bg-yellow-400' : 'bg-blue-500'"
                          :style="{ width: Math.min((familyPot / (familyGoalAmount || 100)) * 100, 100) + '%' }">
                     </div>
                 </div>
-                <button v-if="role === 'admin'" @click="showGoalModal = true" class="mt-2 text-[8px] font-black text-blue-400 underline uppercase tracking-widest">Update Objective</button>
             </div>
         </section>
 
-        <nav v-if="familyId" class="flex gap-2 mb-6">
-            <button @click="tab = 'tasks'" :class="tab === 'tasks' ? 'bg-blue-600' : 'bg-slate-800'" class="flex-1 py-3 rounded-xl fortnite-font text-xs shadow-lg transition-all">Missions</button>
-            <button @click="tab = 'members'" :class="tab === 'members' ? 'bg-blue-600' : 'bg-slate-800'" class="flex-1 py-3 rounded-xl fortnite-font text-xs shadow-lg transition-all">Squad</button>
+        <nav v-if="familyId" class="flex gap-2 mb-4">
+            <button @click="tab = 'tasks'" :class="tab === 'tasks' ? 'bg-blue-600 shadow-lg shadow-blue-600/20' : 'bg-slate-800'" class="flex-1 py-3 rounded-xl fortnite-font text-xs">Missions</button>
+            <button @click="tab = 'members'" :class="tab === 'members' ? 'bg-blue-600' : 'bg-slate-800'" class="flex-1 py-3 rounded-xl fortnite-font text-xs">Squad</button>
         </nav>
+
+        <div v-if="tab === 'tasks'" class="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
+            <button @click="filterRarity = 'all'" :class="filterRarity === 'all' ? 'border-white text-white' : 'border-slate-700 text-slate-500'" class="px-3 py-1 rounded-full border text-[10px] font-black uppercase whitespace-nowrap">All</button>
+            <button @click="filterRarity = 'legendary'" :class="filterRarity === 'legendary' ? 'bg-yellow-400 text-black border-yellow-400' : 'border-slate-700 text-slate-500'" class="px-3 py-1 rounded-full border text-[10px] font-black uppercase whitespace-nowrap">Legendary</button>
+            <button @click="filterRarity = 'epic'" :class="filterRarity === 'epic' ? 'bg-purple-600 text-white border-purple-600' : 'border-slate-700 text-slate-500'" class="px-3 py-1 rounded-full border text-[10px] font-black uppercase whitespace-nowrap">Epic</button>
+            <button @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'" class="ml-auto px-3 py-1 rounded-full border border-blue-500 text-blue-500 text-[10px] font-black uppercase">
+                Gold {{ sortOrder === 'desc' ? '↓' : '↑' }}
+            </button>
+        </div>
 
         <main class="flex-1">
             <div v-if="tab === 'tasks'" class="space-y-4">
-                <button v-if="role === 'admin'" @click="openCreateModal" class="w-full bg-white text-black py-4 rounded-2xl fortnite-font text-sm mb-6 shadow-xl active:scale-95 transition-transform">+ NEW MISSION</button>
+                <button v-if="role === 'admin'" @click="openCreateModal" class="w-full bg-white text-black py-4 rounded-2xl fortnite-font text-sm mb-6 shadow-xl">+ NEW MISSION</button>
                 
-                <div v-for="t in validTasks" :key="t.id" :class="getRarityClass(t.tokens)" class="p-5 rounded-2xl border-t-4 flex flex-col gap-4 relative transition-all">
+                <div v-for="t in filteredTasks" :key="t.id" 
+                     :class="[getRarityClass(t.tokens), 
+                              t.status === 'completed' ? 'card-completed' : '',
+                              (getTimeInfo(t).expired && t.status === 'active') ? 'card-failed' : '']" 
+                     class="p-5 rounded-2xl border-t-4 flex flex-col gap-4 relative transition-all">
                     
                     <div class="flex justify-between items-start">
                         <div @click="role === 'admin' ? openEditModal(t) : null" class="flex-1 cursor-pointer">
@@ -90,46 +101,62 @@
                             </span>
                             <h3 class="fortnite-font text-lg leading-tight">{{ t.title }}</h3>
                             
-                            <div v-if="t.deadline && t.frequency === 'daily'" class="mt-2 flex items-center gap-1.5">
-                                <div class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
-                                <span class="text-[10px] font-black uppercase tracking-tight" :class="getTimeRemaining(t.deadline).urgent ? 'text-rose-500 timer-flash' : 'text-slate-300'">
-                                    Tijd over: {{ getTimeRemaining(t.deadline).text }}
+                            <div v-if="t.frequency !== 'once' && t.status !== 'completed'" class="mt-2 flex items-center gap-1.5">
+                                <span class="text-[10px] font-black font-mono tracking-tighter" :class="getTimeInfo(t).urgent ? 'text-rose-500' : 'text-slate-300'">
+                                    TIME: {{ getTimeInfo(t).formatted }}
                                 </span>
                             </div>
+                            <div v-if="t.status === 'completed'" class="mt-2 text-[10px] font-black text-green-500 uppercase tracking-widest">
+                                Mission Accomplished
+                            </div>
                         </div>
-                        <div class="flex flex-col items-end gap-2">
-                            <div class="bg-black/40 px-3 py-1 rounded-lg backdrop-blur-md"><span class="fortnite-font text-sm text-white">{{ t.tokens }} 🪙</span></div>
-                            <button v-if="role === 'admin'" @click.stop="deleteTask(t.id)" class="text-[9px] text-rose-500 font-black uppercase opacity-40 hover:opacity-100 px-2">Cancel</button>
+                        <div class="bg-black/40 px-3 py-1 rounded-lg border border-white/5 h-fit"><span class="fortnite-font text-sm text-white">{{ t.tokens }}</span></div>
+                    </div>
+
+                    <div v-if="t.status === 'pending' && role === 'admin'" class="bg-black/40 p-4 rounded-2xl border border-white/10">
+                        <p class="text-[10px] font-black text-blue-400 uppercase text-center mb-3 tracking-widest">Review: {{ t.completedByName }}</p>
+                        <div class="flex gap-2">
+                            <button @click="approveTask(t)" class="flex-1 bg-green-500 text-white py-2.5 rounded-xl fortnite-font text-[10px]">APPROVE</button>
+                            <button @click="rejectTask(t)" class="flex-1 bg-rose-600 text-white py-2.5 rounded-xl fortnite-font text-[10px]">REJECT</button>
                         </div>
                     </div>
 
-                    <div v-if="t.status === 'pending'" class="bg-yellow-400/20 border border-yellow-400/50 p-4 rounded-2xl">
-                        <p class="text-[10px] font-black text-yellow-400 uppercase text-center tracking-widest mb-3">Checking Intelligence: {{ t.completedByName }}</p>
-                        <div v-if="role === 'admin'" class="flex gap-2">
-                            <button @click="approveTask(t)" class="flex-1 bg-green-500 text-white py-2.5 rounded-xl fortnite-font text-[10px] shadow-lg">APPROVE</button>
-                            <button @click="rejectTask(t)" class="flex-1 bg-slate-700 text-white py-2.5 rounded-xl fortnite-font text-[10px]">REJECT</button>
-                        </div>
+                    <button v-if="role !== 'admin' && t.status === 'active'" 
+                            :disabled="getTimeInfo(t).expired"
+                            @click="claimTask(t)" 
+                            :class="getTimeInfo(t).expired ? 'bg-slate-800 text-slate-600' : 'bg-white text-black'"
+                            class="py-3 rounded-xl fortnite-font text-xs uppercase transition-all shadow-xl">
+                        {{ getTimeInfo(t).expired ? 'TIME EXPIRED' : 'Complete Objective' }}
+                    </button>
+                    <div v-if="t.status === 'pending' && role !== 'admin'" class="text-center py-2 border border-dashed border-white/10 rounded-xl">
+                        <span class="text-[9px] font-black uppercase text-slate-500 tracking-widest italic">Awaiting Commander...</span>
                     </div>
-
-                    <button v-else-if="role !== 'admin'" @click="claimTask(t)" class="bg-white text-black py-3 rounded-xl fortnite-font text-xs uppercase shadow-xl active:scale-95 transition-all">Claim Rewards</button>
                 </div>
             </div>
 
             <div v-if="tab === 'members'" class="space-y-4">
                 <div v-for="m in memberListDetails" :key="m.email" class="bg-slate-800/40 p-4 rounded-3xl border border-slate-700/50 flex justify-between items-center">
                     <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-slate-700 text-blue-400 border border-blue-500/10">{{ m.name.charAt(0) }}</div>
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-slate-700 text-blue-400">{{ m.name.charAt(0) }}</div>
                         <div @click="role === 'admin' ? editCredits(m) : null">
                             <p class="fortnite-font text-sm">{{ m.name }}</p>
                             <div class="flex gap-2">
                                 <span class="text-[8px] font-black text-yellow-400 uppercase">{{ m.credits || 0 }} Gold</span>
-                                <span v-if="adminEmails.includes(m.email.toLowerCase())" class="text-[8px] font-black text-blue-400 uppercase bg-blue-400/10 px-1 rounded">Commander</span>
+                                <span v-if="adminEmails.includes(m.email.toLowerCase())" class="text-[8px] font-black text-blue-400 uppercase bg-blue-400/10 px-1 rounded">Officer</span>
                             </div>
                         </div>
                     </div>
                     <div v-if="role === 'admin'" class="flex gap-1">
-                        <button @click="toggleAdmin(m.email)" class="bg-slate-700 px-2 py-1.5 rounded-lg text-[8px] fortnite-font uppercase">Rank</button>
-                        <button v-if="m.email.toLowerCase() !== user.email.toLowerCase()" @click="confirmDeleteMember(m)" class="bg-rose-900/30 text-rose-500 px-2 py-1.5 rounded-lg text-[8px] fortnite-font uppercase">Kick</button>
+                        <button @click="toggleAdmin(m.email)" class="bg-slate-700 px-2 py-1 rounded-lg text-[8px] fortnite-font uppercase">Rank</button>
+                        <button v-if="m.email.toLowerCase() !== user.email.toLowerCase()" @click="confirmDeleteMember(m)" class="bg-rose-900/30 text-rose-500 px-2 py-1 rounded-lg text-[8px] fortnite-font uppercase">Kick</button>
+                    </div>
+                </div>
+                <div v-if="role === 'admin'" class="mt-8 bg-blue-600/5 p-6 rounded-[2.5rem] border border-blue-500/20 border-dashed">
+                    <h4 class="fortnite-font text-[10px] mb-4 text-blue-400 text-center tracking-[0.2em]">New Recruit</h4>
+                    <div class="space-y-2">
+                        <input v-model="newMemberName" placeholder="Name" class="w-full p-4 bg-slate-900 rounded-xl font-bold text-white text-sm outline-none">
+                        <input v-model="newMemberEmail" placeholder="Gmail Address" class="w-full p-4 bg-slate-900 rounded-xl font-bold text-white text-sm outline-none">
+                        <button @click="addMember" class="w-full bg-blue-600 text-white py-4 rounded-xl fortnite-font text-xs">Add to Squad</button>
                     </div>
                 </div>
             </div>
@@ -137,42 +164,29 @@
 
         <div v-if="showModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/90 backdrop-blur-md" @click="showModal = false"></div>
-            <div class="bg-slate-900 w-full max-w-md rounded-[2.5rem] p-8 relative z-10 border border-slate-700 shadow-2xl">
+            <div class="bg-slate-900 w-full max-w-md rounded-[2.5rem] p-8 relative z-10 border border-slate-700">
                 <h3 class="fortnite-font text-xl mb-6 text-blue-400">{{ isEditing ? 'Edit Mission' : 'New Mission' }}</h3>
                 <div class="space-y-4">
-                    <div>
-                        <label class="text-[8px] font-black text-slate-500 uppercase ml-1">Mission Objective</label>
-                        <input v-model="form.title" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none focus:ring-1 ring-blue-500/50">
-                    </div>
-                    
+                    <input v-model="form.title" placeholder="Objective" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none">
                     <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-[8px] font-black text-slate-500 uppercase ml-1">Frequency</label>
-                            <select v-model="form.frequency" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none appearance-none">
-                                <option value="once">Once</option>
-                                <option value="daily">Daily</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-[8px] font-black text-slate-500 uppercase ml-1">Reward Gold</label>
-                            <input v-model.number="form.tokens" type="number" class="w-full p-4 bg-slate-800 rounded-xl text-center font-black text-white">
-                        </div>
+                        <select v-model="form.frequency" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none">
+                            <option value="once">Once</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                        <input v-model.number="form.tokens" type="number" class="w-full p-4 bg-slate-800 rounded-xl text-center font-black text-white">
                     </div>
-
                     <div v-if="form.frequency === 'daily'">
-                        <label class="text-[8px] font-black text-rose-500 uppercase ml-1">Mission Expire Time</label>
                         <input v-model="form.deadline" type="time" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none">
                     </div>
-
-                    <div>
-                        <label class="text-[8px] font-black text-slate-500 uppercase ml-1">Target Pot</label>
-                        <select v-model="form.rewardType" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none">
-                            <option value="persoonlijk">Personal Gold</option>
-                            <option :disabled="hasFamilyMission && !isEditing" value="familiepot">Family Pot</option>
-                        </select>
+                    <select v-model="form.rewardType" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none">
+                        <option value="persoonlijk">Personal Gold</option>
+                        <option value="familiepot">Family Pot</option>
+                    </select>
+                    <div class="flex gap-2">
+                        <button v-if="isEditing" @click="deleteTask(currentEditId)" class="flex-1 bg-rose-600 text-white py-4 rounded-xl fortnite-font text-xs">Delete</button>
+                        <button @click="saveTask" :class="isEditing ? 'flex-[2]' : 'w-full'" class="bg-blue-600 text-white py-4 rounded-xl fortnite-font text-xs">Deploy</button>
                     </div>
-
-                    <button @click="saveTask" class="w-full bg-blue-600 text-white py-5 rounded-2xl fortnite-font shadow-lg mt-4 shadow-blue-600/20 uppercase tracking-widest">Deploy Mission</button>
                 </div>
             </div>
         </div>
@@ -181,9 +195,9 @@
             <div class="absolute inset-0 bg-black/95 backdrop-blur-xl" @click="showGoalModal = false"></div>
             <div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-8 relative border border-blue-500/30">
                 <h3 class="fortnite-font text-xl mb-6 text-blue-400">Set Squad Goal</h3>
-                <input v-model="newGoalName" placeholder="Bijv. Pizza Night" class="w-full p-4 bg-slate-800 rounded-xl mb-4 font-bold text-white outline-none">
+                <input v-model="newGoalName" placeholder="Bijv. Pizza" class="w-full p-4 bg-slate-800 rounded-xl mb-4 font-bold text-white outline-none">
                 <input v-model.number="newGoalAmount" type="number" class="w-full p-4 bg-slate-800 rounded-xl mb-6 font-bold text-white outline-none">
-                <button @click="saveGoal" class="w-full bg-blue-600 text-white py-4 rounded-xl fortnite-font text-[10px]">SAVE GOAL</button>
+                <button @click="saveGoal" class="w-full bg-blue-600 text-white py-4 rounded-xl fortnite-font text-xs">Save</button>
             </div>
         </div>
     </div>
@@ -217,46 +231,66 @@
                 const adminEmails = ref([]);
                 const activeTasks = ref([]);
                 const tab = ref('tasks');
+                const filterRarity = ref('all');
+                const sortOrder = ref('desc');
                 const showModal = ref(false);
                 const isEditing = ref(false);
                 const currentEditId = ref(null);
                 const showGoalModal = ref(false);
                 const newGoalName = ref('');
                 const newGoalAmount = ref(100);
-                const newMemberName = ref('');
-                const newMemberEmail = ref('');
                 const currentTime = ref(new Date());
                 const form = ref({ title: '', rewardType: 'persoonlijk', tokens: 5, frequency: 'once', deadline: '' });
+                const newMemberName = ref('');
+                const newMemberEmail = ref('');
 
-                // Update de klok elke seconde voor de timers
                 setInterval(() => { currentTime.value = new Date(); }, 1000);
 
-                const validTasks = computed(() => {
-                    return activeTasks.value.filter(t => {
-                        if (t.frequency === 'daily' && t.deadline) {
-                            const [h, m] = t.deadline.split(':');
-                            const d = new Date(); d.setHours(h, m, 0);
-                            return d > currentTime.value || t.status === 'pending';
-                        }
-                        return true;
-                    }).sort((a, b) => b.tokens - a.tokens);
+                const filteredTasks = computed(() => {
+                    let tasks = [...activeTasks.value];
+                    
+                    if (filterRarity.value !== 'all') {
+                        tasks = tasks.filter(t => getRarityName(t.tokens).toLowerCase() === filterRarity.value);
+                    }
+
+                    return tasks.sort((a, b) => {
+                        const infoA = getTimeInfo(a);
+                        const infoB = getTimeInfo(b);
+                        
+                        // 1. Urgency (Tasks with timers go top)
+                        if (infoA.hasTimer !== infoB.hasTimer) return infoB.hasTimer ? 1 : -1;
+                        if (infoA.hasTimer && infoB.hasTimer) return infoA.diff - infoB.diff;
+                        
+                        // 2. Status (Pending/Active top, Completed bottom)
+                        const statusScore = { 'pending': 0, 'active': 1, 'completed': 2 };
+                        if (statusScore[a.status] !== statusScore[b.status]) return statusScore[a.status] - statusScore[b.status];
+                        
+                        // 3. Gold amount
+                        return sortOrder.value === 'desc' ? b.tokens - a.tokens : a.tokens - b.tokens;
+                    });
                 });
 
-                const hasFamilyMission = computed(() => activeTasks.value.some(t => t.rewardType === 'familiepot'));
-
-                const getTimeRemaining = (deadline) => {
-                    const [h, m] = deadline.split(':');
-                    const target = new Date(); target.setHours(h, m, 0);
-                    const diff = target - currentTime.value;
-                    if (diff <= 0) return { text: "Verlopen", urgent: true };
+                const getTimeInfo = (t) => {
+                    if (t.frequency === 'once') return { formatted: 'INF', diff: Infinity, expired: false, urgent: false, hasTimer: false };
                     
-                    const hours = Math.floor(diff / 3600000);
-                    const minutes = Math.floor((diff % 3600000) / 60000);
-                    const seconds = Math.floor((diff % 60000) / 1000);
-                    return {
-                        text: `${hours}u ${minutes}m ${seconds}s`,
-                        urgent: diff < 1800000 // Kleurt rood bij minder dan 30 min
-                    };
+                    const now = currentTime.value;
+                    let target = new Date();
+                    if (t.frequency === 'daily' && t.deadline) {
+                        const [h, m] = t.deadline.split(':');
+                        target.setHours(h, m, 0, 0);
+                    } else if (t.frequency === 'weekly') {
+                        target.setDate(now.getDate() + (7 - now.getDay()) % 7 + 1); target.setHours(0,0,0,0);
+                    }
+
+                    const diff = target - now;
+                    if (diff <= 0) return { formatted: '0:0:0:0', diff, expired: true, urgent: true, hasTimer: true };
+
+                    const d = Math.floor(diff / 86400000);
+                    const h = Math.floor((diff % 86400000) / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+
+                    return { formatted: `${d}:${h}:${m}:${s}`, diff, expired: false, urgent: diff < 3600000, hasTimer: true };
                 };
 
                 const checkUserAccess = (u) => {
@@ -286,33 +320,8 @@
                     });
                 };
 
-                const getRarityClass = (t) => {
-                    if (t >= 21) return 'card-legendary';
-                    if (t >= 11) return 'card-epic';
-                    if (t >= 6) return 'card-uncommon';
-                    return 'card-common';
-                };
-
-                const getRarityName = (t) => {
-                    if (t >= 21) return 'Legendary';
-                    if (t >= 11) return 'Epic';
-                    if (t >= 6) return 'Uncommon';
-                    return 'Common';
-                };
-
-                const openCreateModal = () => { isEditing.value = false; form.value = { title: '', rewardType: 'persoonlijk', tokens: 5, frequency: 'once', deadline: '' }; showModal.value = true; };
-                const openEditModal = (t) => { isEditing.value = true; currentEditId.value = t.id; form.value = { ...t }; showModal.value = true; };
-
-                const saveTask = async () => {
-                    const data = { ...form.value, familyId: familyId.value, status: 'active' };
-                    if (isEditing.value) await db.collection('tasks').doc(currentEditId.value).update(data);
-                    else await db.collection('tasks').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-                    showModal.value = false;
-                };
-
-                const claimTask = async (task) => {
-                    await db.collection('tasks').doc(task.id).update({ status: 'pending', completedBy: user.value.email.toLowerCase(), completedByName: user.value.displayName });
-                };
+                const getRarityClass = (t) => t >= 21 ? 'card-legendary' : t >= 11 ? 'card-epic' : t >= 6 ? 'card-uncommon' : 'card-common';
+                const getRarityName = (t) => t >= 21 ? 'Legendary' : t >= 11 ? 'Epic' : t >= 6 ? 'Uncommon' : 'Common';
 
                 const approveTask = async (task) => {
                     if (task.rewardType === 'familiepot') await db.collection('families').doc(familyId.value).update({ familyPot: firebase.firestore.FieldValue.increment(task.tokens) });
@@ -321,29 +330,27 @@
                         if (m) await db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: firebase.firestore.FieldValue.increment(task.tokens) });
                     }
                     if (task.frequency === 'once') await db.collection('tasks').doc(task.id).delete();
-                    else await db.collection('tasks').doc(task.id).update({ status: 'active', completedBy: null, completedByName: null });
+                    else await db.collection('tasks').doc(task.id).update({ status: 'completed' }); // Blijft in het scherm staan als voltooid
                 };
 
+                const openCreateModal = () => { isEditing.value = false; form.value = { title: '', rewardType: 'persoonlijk', tokens: 5, frequency: 'once', deadline: '', status: 'active' }; showModal.value = true; };
+                const openEditModal = (t) => { isEditing.value = true; currentEditId.value = t.id; form.value = { ...t }; showModal.value = true; };
+                const saveTask = async () => {
+                    const data = { ...form.value, familyId: familyId.value };
+                    if (isEditing.value) await db.collection('tasks').doc(currentEditId.value).update(data);
+                    else await db.collection('tasks').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    showModal.value = false;
+                };
+                const claimTask = async (task) => { await db.collection('tasks').doc(task.id).update({ status: 'pending', completedBy: user.value.email.toLowerCase(), completedByName: user.value.displayName.split(' ')[0] }); };
                 const rejectTask = async (t) => await db.collection('tasks').doc(t.id).update({ status: 'active', completedBy: null, completedByName: null });
                 const saveGoal = async () => { await db.collection('families').doc(familyId.value).update({ familyGoal: newGoalName.value, familyGoalAmount: newGoalAmount.value }); showGoalModal.value = false; };
-                const deleteTask = async (id) => { if (confirm("Abort Mission?")) await db.collection('tasks').doc(id).delete(); };
-
-                const toggleAdmin = async (e) => {
-                    const mail = e.toLowerCase();
-                    if (adminEmails.value.includes(mail)) await db.collection('families').doc(familyId.value).update({ admin_emails: firebase.firestore.FieldValue.arrayRemove(mail) });
-                    else await db.collection('families').doc(familyId.value).update({ admin_emails: firebase.firestore.FieldValue.arrayUnion(mail) });
-                };
-
-                const addMember = async () => {
-                    const e = newMemberEmail.value.toLowerCase().trim();
-                    await db.collection('families').doc(familyId.value).update({ member_emails: firebase.firestore.FieldValue.arrayUnion(e) });
-                    await db.collection('families').doc(familyId.value).collection('members').add({ name: newMemberName.value, email: e, credits: 0 });
-                    newMemberName.value = ''; newMemberEmail.value = '';
-                };
+                const deleteTask = async (id) => { if (confirm("Abort Mission?")) { await db.collection('tasks').doc(id).delete(); showModal.value = false; } };
+                const toggleAdmin = async (e) => { const mail = e.toLowerCase(); const admins = adminEmails.value; if (admins.includes(mail)) await db.collection('families').doc(familyId.value).update({ admin_emails: firebase.firestore.FieldValue.arrayRemove(mail) }); else await db.collection('families').doc(familyId.value).update({ admin_emails: firebase.firestore.FieldValue.arrayUnion(mail) }); };
+                const addMember = async () => { const e = newMemberEmail.value.toLowerCase().trim(); await db.collection('families').doc(familyId.value).update({ member_emails: firebase.firestore.FieldValue.arrayUnion(e) }); await db.collection('families').doc(familyId.value).collection('members').add({ name: newMemberName.value, email: e, credits: 0 }); newMemberName.value = ''; newMemberEmail.value = ''; };
 
                 onMounted(() => { auth.onAuthStateChanged(u => { if (u) { user.value = u; checkUserAccess(u); } }); });
 
-                return { user, familyId, familyName, role, familyPot, familyGoal, familyGoalAmount, personalCredits, memberListDetails, adminEmails, validTasks, tab, showModal, isEditing, showGoalModal, form, newGoalName, newGoalAmount, newMemberName, newMemberEmail, hasFamilyMission, getRarityClass, getRarityName, getTimeRemaining, openCreateModal, openEditModal, saveTask, deleteTask, claimTask, approveTask, rejectTask, saveGoal, addMember, toggleAdmin, editCredits: (m) => { const a = prompt(`New Gold:`, m.credits); if (a) db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: parseInt(a) }); }, confirmDeleteMember: (m) => { if (confirm(`Kick ${m.name}?`)) { db.collection('families').doc(familyId.value).update({ member_emails: firebase.firestore.FieldValue.arrayRemove(m.email.toLowerCase()) }); db.collection('families').doc(familyId.value).collection('members').doc(m.id).delete(); } }, logout: () => auth.signOut().then(() => location.reload()) };
+                return { user, familyId, familyName, role, familyPot, familyGoal, familyGoalAmount, personalCredits, memberListDetails, adminEmails, filteredTasks, tab, filterRarity, sortOrder, showModal, isEditing, currentEditId, showGoalModal, form, newGoalName, newGoalAmount, newMemberName, newMemberEmail, getRarityClass, getRarityName, getTimeInfo, openCreateModal, openEditModal, saveTask, deleteTask, claimTask, approveTask, rejectTask, saveGoal, toggleAdmin, addMember, editCredits: (m) => { const a = prompt(`New Gold:`, m.credits); if (a) db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: parseInt(a) }); }, confirmDeleteMember: (m) => { if (confirm(`Kick ${m.name}?`)) { db.collection('families').doc(familyId.value).update({ member_emails: firebase.firestore.FieldValue.arrayRemove(m.email.toLowerCase()) }); db.collection('families').doc(familyId.value).collection('members').doc(m.id).delete(); } }, logout: () => auth.signOut().then(() => location.reload()) };
             }
         }).mount('#app');
     </script>
