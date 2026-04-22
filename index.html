@@ -12,25 +12,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&display=swap" rel="stylesheet">
     <style>
         :root { --common: #b1b1b1; --uncommon: #43c034; --epic: #b233f0; --legendary: #f0ad1d; }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #0f172a; 
-            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
-            color: white; min-height: 100vh;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; min-height: 100vh; }
         .fortnite-font { font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; }
         .card-common { background: linear-gradient(135deg, #374151 0%, #111827 100%); border-top: 4px solid var(--common); }
         .card-uncommon { background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); border-top: 4px solid var(--uncommon); }
         .card-epic { background: linear-gradient(135deg, #581c87 0%, #2e1065 100%); border-top: 4px solid var(--epic); }
         .card-legendary { background: linear-gradient(135deg, #78350f 0%, #451a03 100%); border-top: 4px solid var(--legendary); position: relative; overflow: hidden; }
-        .card-legendary::after {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            transform: rotate(45deg); animation: shine 3s infinite;
-        }
-        @keyframes shine { 0% { margin-left: -100%; } 100% { margin-left: 100%; } }
         [v-cloak] { display: none; }
-        select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; }
+        .tab-active { background-color: #2563eb; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); }
     </style>
 </head>
 <body>
@@ -41,85 +30,71 @@
                 <h1 class="fortnite-font text-2xl italic tracking-tighter">BATTLE PASS</h1>
                 <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest">{{ familyName }}</p>
             </div>
-            <button @click="logout" class="text-slate-500 text-[10px] font-black bg-slate-800 px-3 py-1 rounded-lg uppercase">Quit</button>
+            <button @click="logout" class="text-slate-500 text-[10px] font-black bg-slate-800 px-3 py-1 rounded-lg">QUIT</button>
         </header>
 
         <section v-if="familyId" class="mb-6 space-y-4">
-            <div v-if="role === 'admin'" class="bg-slate-900/80 p-6 rounded-[2rem] border border-white/5 shadow-2xl">
-                <p class="fortnite-font text-[10px] text-yellow-400 tracking-widest mb-2">Total Squad Credits</p>
-                <div class="flex items-end gap-2">
-                    <p class="fortnite-font text-5xl text-yellow-400 leading-none">{{ totalOutstandingCredits }}</p>
-                    <p class="text-[14px] font-black text-yellow-400/80 pb-1">🪙</p>
-                </div>
+            <div v-if="role === 'admin'" class="bg-slate-900/80 p-6 rounded-[2rem] border border-white/5">
+                <p class="fortnite-font text-[10px] text-yellow-400 mb-2">Total Squad Credits</p>
+                <p class="fortnite-font text-5xl text-yellow-400 leading-none">{{ totalOutstandingCredits }} 🪙</p>
             </div>
-
-            <div v-else class="bg-slate-900/80 p-6 rounded-[2rem] border border-white/5 shadow-2xl">
-                <p class="fortnite-font text-[10px] text-yellow-400 tracking-widest mb-2">Mijn Balans</p>
+            <div v-else class="bg-slate-900/80 p-6 rounded-[2rem] border border-white/5">
+                <p class="fortnite-font text-[10px] text-yellow-400 mb-2">Mijn Goud</p>
                 <p class="fortnite-font text-5xl text-yellow-400 leading-none">{{ personalCredits }} 🪙</p>
-            </div>
-
-            <div @click="showPotLogs = true" class="bg-blue-600/10 p-5 rounded-[2rem] border border-blue-500/20 cursor-pointer active:scale-95 transition-all">
-                <div class="flex justify-between items-center mb-2 text-blue-400">
-                    <span class="fortnite-font text-[10px] italic uppercase tracking-tighter">Squad Goal: {{ familyGoal || 'TBA' }}</span>
-                    <span class="fortnite-font text-[10px]">🪙 {{ familyPot }} / {{ familyGoalAmount }}</span>
-                </div>
-                <div class="w-full h-4 bg-slate-900 rounded-full overflow-hidden border border-blue-900/30 p-1">
-                    <div class="h-full rounded-full bg-blue-500 transition-all duration-1000" :style="{ width: Math.min((familyPot / familyGoalAmount) * 100, 100) + '%' }"></div>
-                </div>
-                <div v-if="role === 'admin'" class="mt-3 text-center">
-                    <button @click.stop="openGoalModal" class="text-[8px] font-black text-blue-400 underline uppercase tracking-widest">Doel Aanpassen</button>
-                </div>
             </div>
         </section>
 
         <nav v-if="familyId" class="flex gap-2 mb-6">
-            <button @click="tab = 'tasks'" :class="tab === 'tasks' ? 'bg-blue-600' : 'bg-slate-800'" class="flex-1 py-3 rounded-xl fortnite-font text-xs">Missions</button>
-            <button @click="tab = 'members'" :class="tab === 'members' ? 'bg-blue-600' : 'bg-slate-800'" class="flex-1 py-3 rounded-xl fortnite-font text-xs">Squad</button>
+            <button @click="tab = 'tasks'" :class="tab === 'tasks' ? 'tab-active' : 'bg-slate-800'" class="flex-1 py-3 rounded-xl fortnite-font text-xs transition-all">Missions</button>
+            <button @click="tab = 'members'" :class="tab === 'members' ? 'tab-active' : 'bg-slate-800'" class="flex-1 py-3 rounded-xl fortnite-font text-xs transition-all">Squad</button>
         </nav>
 
         <main class="flex-1">
             <div v-if="tab === 'tasks'" class="space-y-4">
-                <button v-if="role === 'admin'" @click="openCreateModal" class="w-full bg-white text-black py-4 rounded-2xl fortnite-font text-sm mb-6 shadow-xl">+ NEW MISSION</button>
+                <button v-if="role === 'admin'" @click="openCreateModal" class="w-full bg-white text-black py-4 rounded-2xl fortnite-font text-sm mb-6">+ NEW MISSION</button>
                 
-                <div v-for="t in visibleTasks" :key="t.id" :class="[getRarityClass(t.tokens), t.status === 'pending' ? 'opacity-50' : '']" class="p-5 rounded-2xl border-t-4 flex flex-col gap-4">
+                <div v-for="t in visibleTasks" :key="t.id" :class="[getRarityClass(t.tokens), isOverdue(t) ? 'opacity-40 grayscale' : '']" class="p-5 rounded-2xl border-t-4 flex flex-col gap-4">
                     <div class="flex justify-between items-start">
                         <div @click="role === 'admin' ? openEditModal(t) : null" :class="role === 'admin' ? 'cursor-pointer' : ''" class="flex-1">
                             <span class="text-[9px] font-black uppercase opacity-60 mb-1 block tracking-widest">
-                                {{ getRarityName(t.tokens) }} • {{ t.type }} 
-                                <span v-if="t.type === 'weekly'"> ({{ getDayName(t.selectedDay) }})</span>
-                                <span v-if="t.type === 'monthly'"> (Dag {{ t.selectedMonthDay }})</span>
+                                {{ getRarityName(t.tokens) }} • {{ t.type }}
+                                <span v-if="t.deadlineTime" class="text-rose-400"> • Deadline: {{ t.deadlineTime }}</span>
                             </span>
                             <h3 class="fortnite-font text-lg italic leading-tight">{{ t.title }}</h3>
                         </div>
-                        <div class="bg-black/30 px-3 py-1 rounded-lg flex items-center gap-1.5">
-                            <span class="fortnite-font text-sm text-white italic">{{ t.tokens }}</span>
-                            <span class="text-[12px]">🪙</span>
+                        <div class="bg-black/30 px-3 py-1 rounded-lg">
+                            <span class="fortnite-font text-sm text-white italic">{{ t.tokens }} 🪙</span>
                         </div>
                     </div>
                     
                     <div v-if="t.status === 'pending' && role === 'admin'" class="flex gap-2">
-                        <button @click="approveTask(t)" class="flex-1 bg-green-500 py-2 rounded-xl fortnite-font text-xs uppercase">Approve</button>
-                        <button @click="rejectTask(t)" class="flex-1 bg-slate-700 py-2 rounded-xl fortnite-font text-xs uppercase">Reject</button>
+                        <button @click="approveTask(t)" class="flex-1 bg-green-500 py-2 rounded-xl fortnite-font text-xs">APPROVE</button>
+                        <button @click="rejectTask(t)" class="flex-1 bg-slate-700 py-2 rounded-xl fortnite-font text-xs">REJECT</button>
                     </div>
-                    <button v-else-if="role !== 'admin' && t.status === 'active'" @click="claimTask(t)" class="bg-white text-black py-2 rounded-xl fortnite-font text-xs uppercase italic">Complete</button>
-                    <div v-else-if="t.status === 'pending'" class="text-center py-1 bg-black/20 rounded-lg">
-                        <span class="text-[10px] font-black uppercase text-blue-400 italic">Waiting for Command...</span>
-                    </div>
+                    <button v-else-if="role !== 'admin' && t.status === 'active' && !isOverdue(t)" @click="claimTask(t)" class="bg-white text-black py-2 rounded-xl fortnite-font text-xs uppercase italic">Complete</button>
                 </div>
             </div>
 
             <div v-if="tab === 'members'" class="space-y-4">
+                <h3 class="fortnite-font text-[10px] text-slate-500 tracking-[0.2em] px-2 italic">Active Squad</h3>
                 <div v-for="m in memberListDetails" :key="m.email" class="bg-slate-800/60 p-4 rounded-3xl border border-slate-700/50 flex justify-between items-center">
                     <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-slate-700 text-blue-400 border border-blue-500/10">{{ m.name.charAt(0) }}</div>
-                        <div>
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-slate-700 text-blue-400">{{ m.name.charAt(0) }}</div>
+                        <div @click="role === 'admin' ? editCredits(m) : null" :class="role === 'admin' ? 'cursor-pointer' : ''">
                             <p class="fortnite-font text-sm italic">{{ m.name }}</p>
-                            <span class="text-[8px] font-black text-yellow-400 uppercase tracking-widest">🪙 {{ m.credits || 0 }}</span>
+                            <span class="text-[8px] font-black text-yellow-400 uppercase">🪙 {{ m.credits || 0 }}</span>
                         </div>
                     </div>
                     <div v-if="role === 'admin'" class="flex gap-1">
                         <button @click="toggleAdmin(m.email)" class="bg-slate-700 px-2 py-2 rounded-lg text-[8px] fortnite-font" :class="adminEmails.includes(m.email.toLowerCase()) ? 'text-blue-400' : 'text-slate-400'">RANK</button>
+                        <button v-if="m.email.toLowerCase() !== user.email.toLowerCase()" @click="confirmDeleteMember(m)" class="bg-rose-900/30 text-rose-500 px-2 py-2 rounded-lg text-[8px] fortnite-font">KICK</button>
                     </div>
+                </div>
+
+                <div v-if="role === 'admin'" class="bg-blue-600/10 p-6 rounded-[2rem] border border-blue-500/20 border-dashed mt-6">
+                    <input v-model="newMemberName" placeholder="Player Name" class="w-full p-4 bg-slate-900 rounded-xl font-bold mb-3 text-white text-sm outline-none">
+                    <input v-model="newMemberEmail" placeholder="Gmail Address" class="w-full p-4 bg-slate-900 rounded-xl font-bold mb-3 text-white text-sm outline-none">
+                    <button @click="addMember" class="w-full bg-blue-600 text-white py-4 rounded-xl fortnite-font text-xs uppercase">Add to Squad</button>
                 </div>
             </div>
         </main>
@@ -127,67 +102,38 @@
         <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/95 backdrop-blur-xl" @click="showCreateModal = false"></div>
             <div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-6 relative border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh]">
-                <h3 class="fortnite-font text-xl mb-6 italic text-center text-blue-400">{{ isEditing ? 'Update Mission' : 'New Mission' }}</h3>
+                <h3 class="fortnite-font text-xl mb-6 italic text-center text-blue-400">Mission Intel</h3>
                 
                 <div class="space-y-4">
-                    <div>
-                        <label class="text-[9px] font-black text-slate-500 uppercase ml-2 mb-1 block">Mission Title</label>
-                        <input v-model="newTask.title" class="w-full p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none border border-white/5">
-                    </div>
-
+                    <input v-model="newTask.title" placeholder="Mission Name" class="w-full p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none">
+                    
                     <div class="flex gap-2">
-                        <div class="flex-1">
-                            <label class="text-[9px] font-black text-slate-500 uppercase ml-2 mb-1 block">Credits</label>
-                            <input v-model.number="newTask.tokens" type="number" class="w-full p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none">
-                        </div>
-                        <div class="flex-1">
-                            <label class="text-[9px] font-black text-slate-500 uppercase ml-2 mb-1 block">Reward Type</label>
-                            <select v-model="newTask.rewardType" class="w-full p-4 bg-slate-800 rounded-xl text-[11px] font-bold text-white outline-none">
-                                <option value="persoonlijk">Personal</option>
-                                <option value="familiepot">Squad Pot</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="text-[9px] font-black text-slate-500 uppercase ml-2 mb-1 block">Frequency</label>
-                        <select v-model="newTask.type" class="w-full p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none border border-white/5">
-                            <option value="once">Once (Nu beschikbaar)</option>
-                            <option value="daily">Daily (Elke dag)</option>
-                            <option value="weekly">Weekly (Specifieke dag)</option>
-                            <option value="monthly">Monthly (Vaste dag)</option>
+                        <input v-model.number="newTask.tokens" type="number" placeholder="Gold" class="flex-1 p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none">
+                        <select v-model="newTask.type" class="flex-1 p-4 bg-slate-800 rounded-xl text-[11px] font-bold text-white outline-none">
+                            <option value="once">Once</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly (4w)</option>
                         </select>
                     </div>
 
-                    <div v-if="newTask.type === 'weekly'" class="grid grid-cols-4 gap-2 bg-slate-800/50 p-3 rounded-xl">
+                    <div v-if="newTask.type === 'daily'">
+                        <label class="text-[9px] font-black text-slate-500 uppercase ml-2 mb-1 block">Deadline (bijv. 19:00)</label>
+                        <input v-model="newTask.deadlineTime" type="time" class="w-full p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none">
+                    </div>
+
+                    <div v-if="newTask.type === 'weekly' || newTask.type === 'monthly'" class="grid grid-cols-4 gap-2">
                         <button v-for="(day, idx) in daysShort" :key="idx" @click="newTask.selectedDay = idx" 
-                            :class="newTask.selectedDay === idx ? 'bg-blue-600 shadow-lg' : 'bg-slate-700 opacity-40'"
+                            :class="newTask.selectedDay === idx ? 'bg-blue-600' : 'bg-slate-700 opacity-40'"
                             class="py-2 rounded-lg text-[9px] font-black uppercase transition-all">
                             {{ day }}
                         </button>
                     </div>
 
-                    <div v-if="newTask.type === 'monthly'" class="bg-slate-800/50 p-3 rounded-xl">
-                        <label class="text-[9px] font-black text-blue-400 uppercase mb-2 block">Kies dag van de maand (1-31)</label>
-                        <input v-model.number="newTask.selectedMonthDay" type="number" min="1" max="31" class="w-full p-3 bg-slate-900 rounded-lg text-center font-black">
-                    </div>
-
                     <div class="flex gap-2 pt-4">
-                        <button v-if="isEditing" @click="deleteTask(newTask.id)" class="flex-1 bg-rose-900/50 text-rose-500 py-4 rounded-xl fortnite-font text-[10px]">Delete</button>
-                        <button @click="saveTask" class="flex-[2] bg-blue-600 text-white py-4 rounded-xl fortnite-font text-sm shadow-lg uppercase">Deploy</button>
+                        <button v-if="isEditing" @click="deleteTask(newTask.id)" class="flex-1 bg-rose-900/50 text-rose-500 py-4 rounded-xl fortnite-font text-[10px]">DELETE</button>
+                        <button @click="saveTask" class="flex-[2] bg-blue-600 text-white py-4 rounded-xl fortnite-font text-sm shadow-lg uppercase">DEPLOY</button>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div v-if="showGoalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/95 backdrop-blur-xl" @click="showGoalModal = false"></div>
-            <div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-8 relative border border-blue-500/30">
-                <h3 class="fortnite-font text-xl mb-6 text-blue-400 text-center uppercase italic">Squad Target</h3>
-                <div class="space-y-4">
-                    <input v-model="newGoalName" placeholder="Goal Name" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none border border-white/5">
-                    <input v-model.number="newGoalAmount" type="number" placeholder="Target Gold" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none border border-white/5">
-                    <button @click="saveGoal" class="w-full bg-blue-600 text-white py-4 rounded-xl fortnite-font uppercase shadow-lg">Confirm</button>
                 </div>
             </div>
         </div>
@@ -216,45 +162,44 @@
                 const familyName = ref('');
                 const role = ref('user');
                 const personalCredits = ref(0);
-                const familyPot = ref(0);
-                const familyGoal = ref('');
-                const familyGoalAmount = ref(100);
                 const memberListDetails = ref([]);
                 const adminEmails = ref([]);
                 const activeTasks = ref([]);
                 const tab = ref('tasks');
                 const showCreateModal = ref(false);
                 const isEditing = ref(false);
-                const showGoalModal = ref(false);
-                const newGoalName = ref('');
-                const newGoalAmount = ref(100);
-                
+                const newTask = ref({ title: '', tokens: 10, type: 'once', selectedDay: 0, deadlineTime: '' });
                 const daysShort = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
-                const newTask = ref({ title: '', tokens: 10, type: 'once', rewardType: 'persoonlijk', selectedDay: 0, selectedMonthDay: 1 });
 
-                // LOGIC: Filter tasks based on "Today"
                 const visibleTasks = computed(() => {
-                    const today = new Date();
-                    const dayOfWeek = (today.getDay() + 6) % 7; // Ma = 0, Zo = 6
-                    const dayOfMonth = today.getDate();
-
+                    const now = new Date();
+                    const dayOfWeek = (now.getDay() + 6) % 7;
+                    
                     return activeTasks.value.filter(t => {
-                        // Admin ziet altijd alles om te kunnen editen
                         if (role.value === 'admin') return true;
                         
-                        // Recruits zien alleen wat nu relevant is
+                        // Zichtbaarheid logica
                         if (t.type === 'once' || t.type === 'daily') return true;
+                        
+                        // Weekly: Alleen op de dag zelf
                         if (t.type === 'weekly' && t.selectedDay === dayOfWeek) return true;
-                        if (t.type === 'monthly' && t.selectedMonthDay === dayOfMonth) return true;
+                        
+                        // Monthly: Check of de "Available Date" is bereikt
+                        if (t.type === 'monthly') {
+                            if (!t.nextAvailable) return t.selectedDay === dayOfWeek;
+                            return now.getTime() >= t.nextAvailable.seconds * 1000 && dayOfWeek === t.selectedDay;
+                        }
                         return false;
                     });
                 });
 
-                const totalOutstandingCredits = computed(() => {
-                    return memberListDetails.value
-                        .filter(m => !adminEmails.value.includes(m.email.toLowerCase()))
-                        .reduce((sum, m) => sum + (m.credits || 0), 0);
-                });
+                const isOverdue = (task) => {
+                    if (task.type !== 'daily' || !task.deadlineTime) return false;
+                    const [h, m] = task.deadlineTime.split(':');
+                    const deadline = new Date();
+                    deadline.setHours(h, m, 0);
+                    return new Date() > deadline;
+                };
 
                 const checkUserAccess = (u) => {
                     const email = u.email.toLowerCase();
@@ -266,9 +211,6 @@
                             adminEmails.value = (data.admin_emails || []).map(e => e.toLowerCase());
                             role.value = adminEmails.value.includes(email) ? 'admin' : 'user';
                             familyName.value = data.familyName;
-                            familyPot.value = data.familyPot || 0;
-                            familyGoal.value = data.familyGoal || '';
-                            familyGoalAmount.value = data.familyGoalAmount || 100;
                             
                             db.collection('families').doc(familyId.value).collection('members').onSnapshot(mSnap => {
                                 memberListDetails.value = mSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -283,18 +225,6 @@
                     });
                 };
 
-                const openCreateModal = () => {
-                    isEditing.value = false;
-                    newTask.value = { title: '', tokens: 10, type: 'once', rewardType: 'persoonlijk', selectedDay: 0, selectedMonthDay: 1 };
-                    showCreateModal.value = true;
-                };
-
-                const openEditModal = (task) => {
-                    isEditing.value = true;
-                    newTask.value = { ...task };
-                    showCreateModal.value = true;
-                };
-
                 const saveTask = async () => {
                     if (!newTask.value.title) return;
                     const data = { ...newTask.value, familyId: familyId.value };
@@ -307,14 +237,20 @@
                 };
 
                 const approveTask = async (task) => {
-                    if (task.rewardType === 'familiepot') {
-                        await db.collection('families').doc(familyId.value).update({ familyPot: firebase.firestore.FieldValue.increment(task.tokens) });
-                    } else {
-                        const m = memberListDetails.value.find(x => x.email.toLowerCase() === task.completedBy);
-                        if (m) await db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: firebase.firestore.FieldValue.increment(task.tokens) });
+                    const m = memberListDetails.value.find(x => x.email.toLowerCase() === task.completedBy);
+                    if (m) {
+                        await db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ 
+                            credits: firebase.firestore.FieldValue.increment(task.tokens) 
+                        });
                     }
+                    
                     if (task.type === 'once') {
                         await db.collection('tasks').doc(task.id).delete();
+                    } else if (task.type === 'monthly') {
+                        // Zet 4 weken vooruit
+                        const next = new Date();
+                        next.setDate(next.getDate() + 28);
+                        await db.collection('tasks').doc(task.id).update({ status: 'active', completedBy: null, nextAvailable: next });
                     } else {
                         await db.collection('tasks').doc(task.id).update({ status: 'active', completedBy: null });
                     }
@@ -323,16 +259,16 @@
                 onMounted(() => { auth.onAuthStateChanged(u => { if (u) { user.value = u; checkUserAccess(u); } }); });
 
                 return { 
-                    user, familyId, role, personalCredits, familyPot, familyGoal, familyGoalAmount, tab, 
-                    totalOutstandingCredits, memberListDetails, adminEmails, visibleTasks, daysShort,
-                    showCreateModal, isEditing, showGoalModal, newGoalName, newGoalAmount, newTask,
-                    openCreateModal, openEditModal, saveTask, approveTask,
-                    deleteTask: async (id) => { if(confirm("Mission verwijderen?")) { await db.collection('tasks').doc(id).delete(); showCreateModal.value = false; }},
-                    openGoalModal: () => { newGoalName.value = familyGoal.value; newGoalAmount.value = familyGoalAmount.value; showGoalModal.value = true; },
-                    saveGoal: async () => { await db.collection('families').doc(familyId.value).update({ familyGoal: newGoalName.value, familyGoalAmount: newGoalAmount.value }); showGoalModal.value = false; },
-                    claimTask: async (t) => await db.collection('tasks').doc(t.id).update({ status: 'pending', completedBy: user.value.email.toLowerCase(), completedByName: user.value.displayName.split(' ')[0] }),
+                    user, familyId, role, personalCredits, tab, memberListDetails, adminEmails, visibleTasks, daysShort,
+                    showCreateModal, isEditing, newTask, isOverdue,
+                    openCreateModal: () => { isEditing.value = false; newTask.value = { title: '', tokens: 10, type: 'once', selectedDay: 0, deadlineTime: '' }; showCreateModal.value = true; },
+                    openEditModal: (t) => { isEditing.value = true; newTask.value = { ...t }; showCreateModal.value = true; },
+                    saveTask, approveTask,
+                    addMember: async () => { /* Logic voor toevoegen */ },
+                    toggleAdmin: async (e) => { /* Logic voor rank */ },
+                    confirmDeleteMember: async (m) => { /* Logic voor kick */ },
+                    claimTask: async (t) => await db.collection('tasks').doc(t.id).update({ status: 'pending', completedBy: user.value.email.toLowerCase() }),
                     rejectTask: async (t) => await db.collection('tasks').doc(t.id).update({ status: 'active', completedBy: null }),
-                    getDayName: (idx) => daysShort[idx],
                     getRarityClass: (t) => t >= 21 ? 'card-legendary' : t >= 11 ? 'card-epic' : t >= 6 ? 'card-uncommon' : 'card-common',
                     getRarityName: (t) => t >= 21 ? 'Legendary' : t >= 11 ? 'Epic' : t >= 6 ? 'Uncommon' : 'Common',
                     logout: () => auth.signOut().then(() => location.reload())
