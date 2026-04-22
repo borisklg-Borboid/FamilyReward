@@ -9,110 +9,51 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <style>
-        body { background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
-        [v-cloak] { display: none; }
-    </style>
 </head>
-<body>
-    <div id="app" v-cloak class="min-h-screen flex flex-col font-sans text-slate-900">
+<body class="bg-slate-50">
+    <div id="app" class="min-h-screen flex flex-col font-sans text-slate-900">
         
+        <div v-if="errorMessage" class="bg-red-600 text-white p-4 text-center text-xs font-bold sticky top-0 z-50">
+            {{ errorMessage }}
+            <button @click="errorMessage = null" class="ml-2 underline text-white/80 font-normal">sluiten</button>
+        </div>
+
         <div v-if="isLoading" class="flex-1 flex flex-col items-center justify-center bg-white">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p class="text-slate-400 animate-pulse">Even geduld...</p>
+            <p class="text-slate-400">Bezig met laden...</p>
         </div>
 
         <div v-else-if="!user" class="flex-1 flex flex-col items-center justify-center p-6 bg-white">
             <h1 class="text-4xl font-black mb-2">Gezins Hub</h1>
-            <p class="text-slate-500 mb-8 text-center text-sm">Beheer klusjes en credits met het hele gezin.</p>
-            <button @click="login" class="w-full max-w-xs bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition">
+            <p class="text-slate-500 mb-8 text-center text-sm">Beheer klusjes en credits.</p>
+            <button @click="loginWithPopup" class="w-full max-w-xs bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">
                 Inloggen met Google
             </button>
         </div>
 
-        <div v-else-if="user && !familyId" class="flex-1 flex flex-col items-center justify-center p-6 bg-white">
-            <div class="w-full max-w-xs text-center">
-                <h2 class="text-2xl font-bold mb-4">Welkom {{ user.displayName }}</h2>
-                <div v-if="alreadyLinkedError" class="bg-red-50 text-red-600 p-4 rounded-xl text-sm border border-red-100 mb-4">
-                    Dit mailadres is al gekoppeld aan een gezin. Vraag de beheerder om je toegang te geven.
-                </div>
-                <div v-else>
-                    <p class="text-slate-500 text-sm mb-6">Geen gezin gevonden. Maak er zelf een aan als beheerder.</p>
-                    <input v-model="newFamilyName" placeholder="Bijv. Familie Jansen" class="w-full p-4 bg-slate-50 rounded-xl border-2 border-blue-100 mb-4 text-center font-bold outline-none focus:border-blue-600">
-                    <button @click="createFamily" :disabled="!newFamilyName" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg disabled:opacity-50 transition">
-                        Start Gezin
-                    </button>
-                </div>
-                <button @click="logout" class="mt-8 text-slate-400 text-xs underline">Uitloggen</button>
+        <div v-else-if="user && !familyId" class="flex-1 flex flex-col items-center justify-center p-6">
+            <div class="w-full max-w-xs text-center bg-white p-8 rounded-3xl shadow-xl">
+                <h2 class="text-xl font-bold mb-4 italic text-blue-600">Hoi {{ user.displayName }}!</h2>
+                <p class="text-slate-500 text-sm mb-6">Er is nog geen gezin gekoppeld aan <b>{{ user.email }}</b>.</p>
+                <input v-model="newFamilyName" placeholder="Gezinsnaam..." class="w-full p-4 bg-slate-50 rounded-xl border-2 border-blue-100 mb-4 text-center font-bold">
+                <button @click="createFamily" :disabled="!newFamilyName" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-lg">
+                    Maak Gezin Aan
+                </button>
+                <button @click="logout" class="mt-8 text-slate-400 text-xs underline block w-full">Uitloggen</button>
             </div>
         </div>
 
         <div v-else class="flex-1 flex flex-col">
-            <header class="bg-white border-b px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+            <header class="bg-white border-b px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
                 <div>
-                    <h2 class="font-bold text-lg leading-tight">{{ familyName }}</h2>
-                    <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest">{{ role === 'admin' ? 'Beheerder' : 'Kind' }}</p>
+                    <h2 class="font-extrabold text-lg leading-tight">{{ familyName }}</h2>
+                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest">{{ role === 'admin' ? 'Ouder' : 'Kind' }}</p>
                 </div>
-                <button @click="logout" class="text-slate-300 hover:text-red-500 transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                </button>
+                <button @click="logout" class="text-slate-300">Log uit</button>
             </header>
-
-            <main class="flex-1 p-4 overflow-y-auto pb-24">
-                <div v-if="role === 'admin'" class="grid grid-cols-2 gap-3 mb-6">
-                    <button @click="tab = 'tasks'" :class="tab === 'tasks' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-400 border'" class="py-3 rounded-2xl font-bold">Taken</button>
-                    <button @click="tab = 'members'" :class="tab === 'members' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-400 border'" class="py-3 rounded-2xl font-bold">Gezin</button>
-                </div>
-
-                <div v-if="tab === 'members' && role === 'admin'">
-                    <section class="bg-white p-6 rounded-3xl shadow-sm mb-6 border border-blue-50">
-                        <h4 class="font-bold mb-4">Lid toevoegen</h4>
-                        <input v-model="newMemberEmail" type="email" placeholder="Gmail adres..." class="w-full bg-slate-50 p-4 rounded-xl border mb-3 outline-none focus:border-blue-500">
-                        <button @click="addMember" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold">Voeg toe</button>
-                    </section>
-                    <div v-for="email in memberList" :key="email" class="bg-white p-4 rounded-2xl mb-2 border flex justify-between items-center">
-                        <div class="flex flex-col">
-                            <span class="text-sm font-medium">{{ email }}</span>
-                            <span class="text-[10px] font-bold uppercase" :class="adminEmails.includes(email) ? 'text-amber-600' : 'text-slate-400'">
-                                {{ adminEmails.includes(email) ? 'Beheerder' : 'Kind' }}
-                            </span>
-                        </div>
-                        <button v-if="!adminEmails.includes(email)" @click="makeAdmin(email)" class="text-[10px] bg-slate-100 px-3 py-2 rounded-lg font-bold">Maak Beheerder</button>
-                    </div>
-                </div>
-
-                <div v-if="tab === 'tasks'">
-                    <button v-if="role === 'admin'" @click="showModal = true" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold mb-6 shadow-lg">+ Nieuwe Klus</button>
-                    <div v-if="activeTasks.length === 0" class="text-center py-12 text-slate-400 italic">Geen klusjes gevonden.</div>
-                    <div v-for="task in activeTasks" :key="task.id" class="bg-white mb-3 p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-                        <div>
-                            <p class="font-bold">{{ task.title }}</p>
-                            <p class="text-xs text-slate-400">{{ task.tokens }} 🪙 • {{ task.rewardType }}</p>
-                        </div>
-                        <button @click="completeTask(task.id)" class="bg-slate-50 p-3 rounded-xl hover:bg-green-100 transition text-slate-300 hover:text-green-600">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                        </button>
-                    </div>
-                </div>
+            <main class="flex-1 p-4">
+                <p class="text-center text-slate-400 mt-10">Je bent binnen! Welkom in het dashboard.</p>
             </main>
-        </div>
-
-        <div v-if="showModal" class="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm">
-            <div class="bg-white w-full max-w-md rounded-3xl p-6">
-                <h3 class="text-xl font-bold mb-4 text-center">Nieuwe Klus</h3>
-                <input v-model="form.title" placeholder="Wat moet er gebeuren?" class="w-full p-4 bg-slate-50 rounded-xl mb-4 border outline-none focus:border-blue-500">
-                <div class="flex gap-2 mb-6">
-                    <select v-model="form.rewardType" class="flex-1 p-4 bg-slate-50 rounded-xl border outline-none">
-                        <option value="persoonlijk">Persoonlijk</option>
-                        <option value="familiepot">Familiepot</option>
-                    </select>
-                    <input v-model.number="form.tokens" type="number" class="w-24 p-4 bg-slate-50 rounded-xl text-center font-bold border">
-                </div>
-                <div class="flex gap-3">
-                    <button @click="showModal = false" class="flex-1 py-4 text-slate-400 font-bold">Annuleren</button>
-                    <button @click="saveTask" class="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-100">Opslaan</button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -123,8 +64,7 @@
             projectId: "familyreward-c4582",
             storageBucket: "familyreward-c4582.firebasestorage.app",
             messagingSenderId: "500697306700",
-            appId: "1:500697306700:web:e812d2b9891c4d2f64c6e9",
-            measurementId: "G-SD0V30WXJ5"
+            appId: "1:500697306700:web:e812d2b9891c4d2f64c6e9"
         };
         
         firebase.initializeApp(firebaseConfig);
@@ -137,20 +77,23 @@
                 const isLoading = ref(true);
                 const user = ref(null);
                 const familyId = ref(null);
-                const isNewUser = ref(false);
-                const alreadyLinkedError = ref(false);
-                const role = ref('user');
                 const familyName = ref('');
-                const adminEmails = ref([]);
-                const memberList = ref([]);
-                const activeTasks = ref([]);
-                const tab = ref('tasks');
-                const showModal = ref(false);
-                const newMemberEmail = ref('');
+                const role = ref('user');
                 const newFamilyName = ref('');
-                const form = ref({ title: '', rewardType: 'persoonlijk', tokens: 5 });
+                const errorMessage = ref(null);
 
-                const login = () => auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+                const loginWithPopup = async () => {
+                    errorMessage.value = null;
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    try {
+                        const result = await auth.signInWithPopup(provider);
+                        user.value = result.user;
+                        await checkUserAccess(result.user);
+                    } catch (e) {
+                        errorMessage.value = "Inlogfout: " + e.message;
+                    }
+                };
+
                 const logout = () => auth.signOut().then(() => window.location.reload());
 
                 const checkUserAccess = async (u) => {
@@ -158,21 +101,14 @@
                     try {
                         const email = u.email.toLowerCase();
                         const snap = await db.collection('families').where('member_emails', 'array-contains', email).get();
-
                         if (!snap.empty) {
                             const doc = snap.docs[0];
                             familyId.value = doc.id;
-                            const data = doc.data();
-                            familyName.value = data.familyName;
-                            memberList.value = data.member_emails || [];
-                            adminEmails.value = data.admin_emails || [memberList.value[0]];
-                            role.value = adminEmails.value.includes(email) ? 'admin' : 'user';
-                            loadTasks();
-                        } else {
-                            isNewUser.value = true;
+                            familyName.value = doc.data().familyName;
+                            role.value = (doc.data().admin_emails || [email]).includes(email) ? 'admin' : 'user';
                         }
                     } catch (e) {
-                        console.error("Toegangsfout:", e);
+                        errorMessage.value = "Databasefout: " + e.message;
                     } finally {
                         isLoading.value = false;
                     }
@@ -181,87 +117,36 @@
                 const createFamily = async () => {
                     if (!newFamilyName.value) return;
                     isLoading.value = true;
-                    const email = user.value.email.toLowerCase();
-                    
-                    const check = await db.collection('families').where('member_emails', 'array-contains', email).get();
-                    if (!check.empty) { 
-                        alreadyLinkedError.value = true; 
-                        isLoading.value = false;
-                        return; 
-                    }
-
-                    const newDoc = await db.collection('families').add({
-                        familyName: newFamilyName.value,
-                        member_emails: [email],
-                        admin_emails: [email],
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    familyId.value = newDoc.id;
-                    familyName.value = newFamilyName.value;
-                    adminEmails.value = [email];
-                    memberList.value = [email];
-                    role.value = 'admin';
-                    isNewUser.value = false;
-                    isLoading.value = false;
-                    loadTasks();
-                };
-
-                const loadTasks = () => {
-                    db.collection('tasks').where('familyId', '==', familyId.value)
-                        .onSnapshot(snap => {
-                            activeTasks.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    try {
+                        const email = user.value.email.toLowerCase();
+                        const newDoc = await db.collection('families').add({
+                            familyName: newFamilyName.value,
+                            member_emails: [email],
+                            admin_emails: [email],
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
+                        familyId.value = newDoc.id;
+                        familyName.value = newFamilyName.value;
+                        role.value = 'admin';
+                    } catch (e) {
+                        errorMessage.value = "Aanmaakfout: " + e.message;
+                    } finally {
+                        isLoading.value = false;
+                    }
                 };
-
-                const makeAdmin = async (targetEmail) => {
-                    await db.collection('families').doc(familyId.value).update({
-                        admin_emails: firebase.firestore.FieldValue.arrayUnion(targetEmail)
-                    });
-                    adminEmails.value.push(targetEmail);
-                };
-
-                const addMember = async () => {
-                    if (!newMemberEmail.value) return;
-                    const email = newMemberEmail.value.toLowerCase().trim();
-                    await db.collection('families').doc(familyId.value).update({
-                        member_emails: firebase.firestore.FieldValue.arrayUnion(email)
-                    });
-                    memberList.value.push(email);
-                    newMemberEmail.value = '';
-                };
-
-                const saveTask = async () => {
-                    if (!form.value.title) return;
-                    await db.collection('tasks').add({
-                        ...form.value,
-                        familyId: familyId.value,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    showModal.value = false;
-                    form.value.title = '';
-                };
-
-                const completeTask = (id) => db.collection('tasks').doc(id).delete();
 
                 onMounted(() => {
-                    auth.getRedirectResult().then(() => {
-                        auth.onAuthStateChanged(u => {
-                            if (u) {
-                                user.value = u;
-                                checkUserAccess(u);
-                            } else {
-                                isLoading.value = false;
-                                user.value = null;
-                            }
-                        });
-                    }).catch(e => {
-                        console.error("Auth fout:", e);
-                        isLoading.value = false;
+                    auth.onAuthStateChanged(u => {
+                        if (u) {
+                            user.value = u;
+                            checkUserAccess(u);
+                        } else {
+                            isLoading.value = false;
+                        }
                     });
                 });
 
-                return { isLoading, user, isNewUser, alreadyLinkedError, role, familyId, familyName, adminEmails, memberList, activeTasks, tab, showModal, newMemberEmail, newFamilyName, form, login, logout, createFamily, addMember, makeAdmin, saveTask, completeTask };
+                return { isLoading, user, familyId, familyName, role, newFamilyName, errorMessage, loginWithPopup, logout, createFamily };
             }
         }).mount('#app');
     </script>
