@@ -9,51 +9,171 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --glass: rgba(255, 255, 255, 0.8); }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top right, #e2e8f0, #f8fafc);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .task-card {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .task-card:active { transform: scale(0.96); }
+        [v-cloak] { display: none; }
+    </style>
 </head>
-<body class="bg-slate-50">
-    <div id="app" class="min-h-screen flex flex-col font-sans text-slate-900">
+<body class="text-slate-900 overflow-x-hidden">
+    <div id="app" v-cloak class="min-h-screen flex flex-col max-w-md mx-auto relative">
         
-        <div v-if="errorMessage" class="bg-red-600 text-white p-4 text-center text-xs font-bold sticky top-0 z-50">
-            {{ errorMessage }}
-            <button @click="errorMessage = null" class="ml-2 underline text-white/80 font-normal">sluiten</button>
-        </div>
+        <transition name="fade">
+            <div v-if="errorMessage" class="fixed top-4 left-4 right-4 z-[100] bg-rose-500 text-white p-4 rounded-2xl shadow-2xl font-bold text-xs flex justify-between items-center">
+                <span>{{ errorMessage }}</span>
+                <button @click="errorMessage = null" class="opacity-50">✕</button>
+            </div>
+        </transition>
 
-        <div v-if="isLoading" class="flex-1 flex flex-col items-center justify-center bg-white">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p class="text-slate-400">Bezig met laden...</p>
-        </div>
-
-        <div v-else-if="!user" class="flex-1 flex flex-col items-center justify-center p-6 bg-white">
-            <h1 class="text-4xl font-black mb-2">Gezins Hub</h1>
-            <p class="text-slate-500 mb-8 text-center text-sm">Beheer klusjes en credits.</p>
-            <button @click="loginWithPopup" class="w-full max-w-xs bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">
-                Inloggen met Google
-            </button>
-        </div>
-
-        <div v-else-if="user && !familyId" class="flex-1 flex flex-col items-center justify-center p-6">
-            <div class="w-full max-w-xs text-center bg-white p-8 rounded-3xl shadow-xl">
-                <h2 class="text-xl font-bold mb-4 italic text-blue-600">Hoi {{ user.displayName }}!</h2>
-                <p class="text-slate-500 text-sm mb-6">Er is nog geen gezin gekoppeld aan <b>{{ user.email }}</b>.</p>
-                <input v-model="newFamilyName" placeholder="Gezinsnaam..." class="w-full p-4 bg-slate-50 rounded-xl border-2 border-blue-100 mb-4 text-center font-bold">
-                <button @click="createFamily" :disabled="!newFamilyName" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-lg">
-                    Maak Gezin Aan
-                </button>
-                <button @click="logout" class="mt-8 text-slate-400 text-xs underline block w-full">Uitloggen</button>
+        <div v-if="isLoading" class="flex-1 flex flex-col items-center justify-center">
+            <div class="relative w-16 h-16">
+                <div class="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
             </div>
         </div>
 
-        <div v-else class="flex-1 flex flex-col">
-            <header class="bg-white border-b px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
-                <div>
-                    <h2 class="font-extrabold text-lg leading-tight">{{ familyName }}</h2>
-                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest">{{ role === 'admin' ? 'Ouder' : 'Kind' }}</p>
+        <div v-else-if="!user" class="flex-1 flex flex-col px-8 pt-20 pb-10">
+            <div class="flex-1">
+                <div class="w-14 h-14 bg-blue-600 rounded-2xl shadow-xl shadow-blue-200 mb-8 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                 </div>
-                <button @click="logout" class="text-slate-300">Log uit</button>
+                <h1 class="text-5xl font-extrabold tracking-tight mb-4 leading-[1.1]">Gezins<br><span class="text-blue-600">Hub.</span></h1>
+                <p class="text-slate-500 text-lg leading-relaxed">Breng orde en plezier in jullie dagelijkse routines.</p>
+            </div>
+            <button @click="loginWithPopup" class="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-bold text-lg shadow-2xl shadow-slate-300 active:scale-95 transition-all">
+                Start met Google
+            </button>
+        </div>
+
+        <div v-else-if="user && !familyId" class="flex-1 flex flex-col p-6">
+            <div class="flex-1 flex flex-col justify-center">
+                <span class="text-blue-600 font-bold uppercase tracking-[0.2em] text-[10px] mb-2">Nieuw begin</span>
+                <h2 class="text-4xl font-extrabold mb-6">Hoi {{ user.displayName.split(' ')[0] }}!</h2>
+                <div class="glass-card p-8 rounded-[2.5rem] shadow-xl">
+                    <p class="text-slate-500 mb-6 font-medium text-sm">Geef je gezin een naam om de Hub te activeren.</p>
+                    <input v-model="newFamilyName" placeholder="Gezinsnaam..." class="w-full p-5 bg-white rounded-2xl border-none shadow-inner mb-4 font-bold text-center text-xl outline-none ring-2 ring-transparent focus:ring-blue-500/20 transition-all">
+                    <button @click="createFamily" :disabled="!newFamilyName" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold shadow-lg shadow-blue-200">
+                        Maak Hub aan
+                    </button>
+                </div>
+            </div>
+            <button @click="logout" class="text-slate-400 text-sm font-semibold opacity-50">Log uit</button>
+        </div>
+
+        <div v-else class="flex-1 flex flex-col">
+            <header class="px-6 py-8 flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-extrabold tracking-tight">{{ familyName }}</h2>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">{{ role === 'admin' ? 'Co-Pilot' : 'Member' }}</span>
+                    </div>
+                </div>
+                <button @click="logout" class="w-12 h-12 glass-card rounded-2xl flex items-center justify-center text-slate-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </button>
             </header>
-            <main class="flex-1 p-4">
-                <p class="text-center text-slate-400 mt-10">Je bent binnen! Welkom in het dashboard.</p>
+
+            <nav v-if="role === 'admin'" class="px-6 mb-8">
+                <div class="glass-card p-1.5 rounded-2xl flex gap-1">
+                    <button @click="tab = 'tasks'" :class="tab === 'tasks' ? 'bg-white shadow-md text-slate-900' : 'text-slate-400'" class="flex-1 py-3 rounded-xl font-bold transition-all text-sm">Tasks</button>
+                    <button @click="tab = 'members'" :class="tab === 'members' ? 'bg-white shadow-md text-slate-900' : 'text-slate-400'" class="flex-1 py-3 rounded-xl font-bold transition-all text-sm">Family</button>
+                </div>
+            </nav>
+
+            <main class="flex-1 px-6 pb-32">
+                <div v-if="tab === 'members'" class="space-y-8 animate-in fade-in duration-500">
+                    <div class="glass-card p-6 rounded-[2rem] shadow-sm">
+                        <h4 class="font-bold text-sm mb-4">Lid uitnodigen</h4>
+                        <div class="relative">
+                            <input v-model="newMemberEmail" type="email" placeholder="Gmail adres..." class="w-full p-4 bg-white/50 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500/10 mb-3 font-medium">
+                            <button @click="addMember" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold">Toevoegen</button>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 px-2">Crew</h3>
+                        <div v-for="email in memberList" :key="email" class="glass-card p-5 rounded-3xl flex justify-between items-center border border-white/40">
+                            <div>
+                                <p class="font-bold text-sm text-slate-700">{{ email }}</p>
+                                <p class="text-[9px] font-black uppercase tracking-wider" :class="adminEmails.includes(email) ? 'text-blue-600' : 'text-slate-400'">{{ adminEmails.includes(email) ? 'Admin' : 'Member' }}</p>
+                            </div>
+                            <button v-if="!adminEmails.includes(email)" @click="makeAdmin(email)" class="text-[9px] bg-white px-3 py-2 rounded-xl font-black border border-slate-100 shadow-sm">UPGRADE</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="tab === 'tasks'" class="space-y-4">
+                    <button v-if="role === 'admin'" @click="showModal = true" class="w-full bg-blue-600 text-white py-5 rounded-[2rem] font-extrabold shadow-xl shadow-blue-100 mb-6 flex items-center justify-center gap-3">
+                        <span class="text-2xl font-normal leading-none">+</span>
+                        <span class="text-sm tracking-wide">NIEUWE TAAK</span>
+                    </button>
+                    
+                    <div v-if="activeTasks.length === 0" class="text-center py-20 bg-white/30 rounded-[3rem] border border-dashed border-slate-200">
+                        <p class="text-slate-400 font-medium italic">Geen taken vandaag!</p>
+                    </div>
+
+                    <div v-for="task in activeTasks" :key="task.id" class="task-card glass-card p-6 rounded-[2.2rem] shadow-sm flex items-center justify-between border border-white/60">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-slate-800 text-lg leading-tight mb-2">{{ task.title }}</h3>
+                            <div class="flex gap-2">
+                                <span class="bg-blue-600 text-white text-[9px] px-2.5 py-1 rounded-full font-black uppercase">{{ task.tokens }} CREDITS</span>
+                                <span class="bg-slate-100 text-slate-500 text-[9px] px-2.5 py-1 rounded-full font-black uppercase">{{ task.rewardType }}</span>
+                            </div>
+                        </div>
+                        <button @click="completeTask(task.id)" class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-slate-200 hover:text-green-500 shadow-sm transition-colors border border-slate-50">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                        </button>
+                    </div>
+                </div>
             </main>
+
+            <transition name="modal">
+                <div v-if="showModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+                    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="showModal = false"></div>
+                    <div class="bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl relative z-10">
+                        <div class="w-12 h-1 bg-slate-100 rounded-full mx-auto mb-8"></div>
+                        <h3 class="text-3xl font-extrabold mb-8">Nieuwe Taak</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2 mb-2 block">Wat moet er gebeuren?</label>
+                                <input v-model="form.title" placeholder="Bijv. Slaapkamer..." class="w-full p-5 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500/20 font-bold text-lg transition-all">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2 mb-2 block">Type</label>
+                                    <select v-model="form.rewardType" class="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none border-none appearance-none">
+                                        <option value="persoonlijk">Persoonlijk</option>
+                                        <option value="familiepot">Familiepot</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2 mb-2 block">Credits</label>
+                                    <input v-model.number="form.tokens" type="number" class="w-full p-5 bg-slate-50 rounded-2xl text-center font-black outline-none border-none">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 mt-10">
+                            <button @click="showModal = false" class="flex-1 py-5 text-slate-400 font-bold">Sluiten</button>
+                            <button @click="saveTask" class="flex-2 px-10 py-5 bg-blue-600 text-white rounded-2xl font-extrabold shadow-xl shadow-blue-100">OPSLAAN</button>
+                        </div>
+                    </div>
+                </div>
+            </transition>
         </div>
     </div>
 
@@ -79,19 +199,21 @@
                 const familyId = ref(null);
                 const familyName = ref('');
                 const role = ref('user');
-                const newFamilyName = ref('');
+                const adminEmails = ref([]);
+                const memberList = ref([]);
+                const activeTasks = ref([]);
+                const tab = ref('tasks');
+                const showModal = ref(false);
                 const errorMessage = ref(null);
+                const newMemberEmail = ref('');
+                const newFamilyName = ref('');
+                const form = ref({ title: '', rewardType: 'persoonlijk', tokens: 5 });
 
                 const loginWithPopup = async () => {
-                    errorMessage.value = null;
-                    const provider = new firebase.auth.GoogleAuthProvider();
                     try {
-                        const result = await auth.signInWithPopup(provider);
+                        const result = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
                         user.value = result.user;
-                        await checkUserAccess(result.user);
-                    } catch (e) {
-                        errorMessage.value = "Inlogfout: " + e.message;
-                    }
+                    } catch (e) { errorMessage.value = "Auth error: " + e.message; }
                 };
 
                 const logout = () => auth.signOut().then(() => window.location.reload());
@@ -100,17 +222,22 @@
                     isLoading.value = true;
                     try {
                         const email = u.email.toLowerCase();
-                        const snap = await db.collection('families').where('member_emails', 'array-contains', email).get();
-                        if (!snap.empty) {
-                            const doc = snap.docs[0];
-                            familyId.value = doc.id;
-                            familyName.value = doc.data().familyName;
-                            role.value = (doc.data().admin_emails || [email]).includes(email) ? 'admin' : 'user';
-                        }
-                    } catch (e) {
-                        errorMessage.value = "Databasefout: " + e.message;
-                    } finally {
-                        isLoading.value = false;
+                        db.collection('families').where('member_emails', 'array-contains', email)
+                            .onSnapshot(snap => {
+                                if (!snap.empty) {
+                                    const data = snap.docs[0].data();
+                                    familyId.value = snap.docs[0].id;
+                                    familyName.value = data.familyName;
+                                    memberList.value = data.member_emails || [];
+                                    adminEmails.value = data.admin_emails || [memberList.value[0]];
+                                    role.value = adminEmails.value.includes(email) ? 'admin' : 'user';
+                                    loadTasks();
+                                }
+                                isLoading.value = false;
+                            });
+                    } catch (e) { 
+                        errorMessage.value = "DB Error"; 
+                        isLoading.value = false; 
                     }
                 };
 
@@ -119,34 +246,64 @@
                     isLoading.value = true;
                     try {
                         const email = user.value.email.toLowerCase();
-                        const newDoc = await db.collection('families').add({
+                        await db.collection('families').add({
                             familyName: newFamilyName.value,
                             member_emails: [email],
                             admin_emails: [email],
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
-                        familyId.value = newDoc.id;
-                        familyName.value = newFamilyName.value;
-                        role.value = 'admin';
-                    } catch (e) {
-                        errorMessage.value = "Aanmaakfout: " + e.message;
-                    } finally {
-                        isLoading.value = false;
-                    }
+                    } catch (e) { errorMessage.value = "Maken mislukt"; isLoading.value = false; }
                 };
+
+                const addMember = async () => {
+                    if (!newMemberEmail.value) return;
+                    try {
+                        await db.collection('families').doc(familyId.value).update({
+                            member_emails: firebase.firestore.FieldValue.arrayUnion(newMemberEmail.value.toLowerCase().trim())
+                        });
+                        newMemberEmail.value = '';
+                    } catch (e) { errorMessage.value = "Toevoegen mislukt"; }
+                };
+
+                const makeAdmin = async (email) => {
+                    try {
+                        await db.collection('families').doc(familyId.value).update({
+                            admin_emails: firebase.firestore.FieldValue.arrayUnion(email)
+                        });
+                    } catch (e) { errorMessage.value = "Update mislukt"; }
+                };
+
+                const loadTasks = () => {
+                    db.collection('tasks').where('familyId', '==', familyId.value)
+                        .orderBy('createdAt', 'desc')
+                        .onSnapshot(snap => {
+                            activeTasks.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        });
+                };
+
+                const saveTask = async () => {
+                    if (!form.value.title) return;
+                    try {
+                        await db.collection('tasks').add({
+                            ...form.value,
+                            familyId: familyId.value,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        showModal.value = false;
+                        form.value.title = '';
+                    } catch (e) { errorMessage.value = "Opslaan mislukt"; }
+                };
+
+                const completeTask = (id) => db.collection('tasks').doc(id).delete();
 
                 onMounted(() => {
                     auth.onAuthStateChanged(u => {
-                        if (u) {
-                            user.value = u;
-                            checkUserAccess(u);
-                        } else {
-                            isLoading.value = false;
-                        }
+                        if (u) { user.value = u; checkUserAccess(u); }
+                        else { isLoading.value = false; }
                     });
                 });
 
-                return { isLoading, user, familyId, familyName, role, newFamilyName, errorMessage, loginWithPopup, logout, createFamily };
+                return { isLoading, user, familyId, familyName, role, adminEmails, memberList, activeTasks, tab, showModal, errorMessage, newMemberEmail, newFamilyName, form, loginWithPopup, logout, createFamily, addMember, makeAdmin, saveTask, completeTask };
             }
         }).mount('#app');
     </script>
