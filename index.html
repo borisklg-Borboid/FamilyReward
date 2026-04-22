@@ -133,10 +133,11 @@
                 const newMemberEmail = ref('');
                 const form = ref({ title: '', rewardType: 'persoonlijk', tokens: 5 });
 
-                const login = () => {
-                    const provider = new firebase.auth.GoogleAuthProvider();
-                    auth.signInWithRedirect(provider);
-                };
+const login = () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    // Gebruik Redirect in plaats van Popup voor betere mobiele ondersteuning
+    auth.signInWithRedirect(provider);
+};
 
                 const logout = () => auth.signOut();
 
