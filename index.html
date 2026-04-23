@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SQUAD HUB</title>
+<title>SQUAD HUB SAFE</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -13,12 +13,13 @@
 
 <style>
 body { background:#0f172a; color:white; font-family:sans-serif; }
-.card { background:#1e293b; padding:16px; border-radius:16px; }
+.card { background:#1e293b; padding:16px; border-radius:16px; margin-bottom:12px; }
 [v-cloak]{display:none;}
 </style>
 </head>
 
 <body>
+
 <div id="app" v-cloak class="max-w-md mx-auto p-4">
 
 <!-- LOGIN -->
@@ -33,25 +34,21 @@ body { background:#0f172a; color:white; font-family:sans-serif; }
 
     <h1 class="text-xl mb-4">SQUAD HUB</h1>
 
-    <!-- BALANCE -->
-    <div class="card mb-4">
-        <p>Saldo</p>
+    <div class="card">
+        <p>Credits</p>
         <h2 class="text-3xl">{{ credits }} 🪙</h2>
     </div>
 
-    <!-- ACTIONS -->
     <div class="grid grid-cols-2 gap-2 mb-4">
         <button @click="boost" class="bg-blue-500 p-3 rounded-xl">Boost</button>
         <button @click="cashout" class="bg-yellow-500 p-3 rounded-xl">Cashout</button>
     </div>
 
-    <!-- POT -->
-    <div class="card mb-4">
+    <div class="card">
         <p>Family Pot</p>
         <h2 class="text-2xl">{{ familyPot }} 🪙</h2>
     </div>
 
-    <!-- TASKS -->
     <div class="space-y-2">
         <div v-for="t in tasks" :key="t.id" class="card">
             <p>{{ t.title }} ({{ t.tokens }} 🪙)</p>
@@ -69,17 +66,14 @@ body { background:#0f172a; color:white; font-family:sans-serif; }
 
 </div>
 
-<!-- DEBUG -->
 <div v-if="user && !familyId" class="text-red-400 mt-10">
-    Geen family gevonden...
+    Loading family...
 </div>
 
 </div>
 
 <script>
-window.onerror = function (msg, url, line, col, error) {
-    console.error("GLOBAL ERROR:", msg, error);
-};
+console.log("SCRIPT START");
 
 const firebaseConfig = {
     apiKey: "AIzaSy...",
@@ -88,6 +82,7 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+
 const db = firebase.firestore();
 const auth = firebase.auth();
 
@@ -95,6 +90,8 @@ const { createApp, ref, onMounted } = Vue;
 
 createApp({
 setup() {
+
+console.log("VUE START");
 
 const user = ref(null);
 const familyId = ref(null);
@@ -104,58 +101,86 @@ const credits = ref(0);
 const familyPot = ref(0);
 const tasks = ref([]);
 
-const login = () => {
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+const login = async () => {
+    console.log("LOGIN CLICK");
+
+    try {
+        await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    } catch (e) {
+        console.error("LOGIN ERROR:", e);
+        alert(e.message);
+    }
 };
 
 const init = async (u) => {
-    console.log("INIT USER", u.uid);
+    console.log("INIT USER:", u.uid);
 
-    const q = await db.collection('families')
-        .where('member_uids', 'array-contains', u.uid)
-        .get();
+    try {
+        const q = await db.collection('families')
+            .where('member_uids', 'array-contains', u.uid)
+            .get();
 
-    if (q.empty) {
-        console.log("CREATING FAMILY");
+        if (q.empty) {
+            console.log("CREATE FAMILY");
 
-        await db.collection('families').doc(u.uid).set({
-            member_uids:[u.uid],
-            admin_uids:[u.uid],
-            familyPot:0
-        });
+            await db.collection('families').doc(u.uid).set({
+                member_uids:[u.uid],
+                admin_uids:[u.uid],
+                familyPot:0
+            });
 
-        await db.collection('families').doc(u.uid)
-            .collection('members').doc(u.uid)
-            .set({ credits:0 });
+            await db.collection('families')
+                .doc(u.uid)
+                .collection('members')
+                .doc(u.uid)
+                .set({ credits:0 });
 
-        familyId.value = u.uid;
-        role.value = 'admin';
+            familyId.value = u.uid;
+            role.value = 'admin';
 
-    } else {
-        familyId.value = q.docs[0].id;
+        } else {
+            const doc = q.docs[0];
+            familyId.value = doc.id;
 
-        const data = q.docs[0].data();
-        role.value = data.admin_uids.includes(u.uid) ? 'admin':'user';
+            const data = doc.data() || {};
+            const admins = data.admin_uids || [];
+
+            role.value = admins.includes(u.uid) ? 'admin':'user';
+        }
+
+        startListeners();
+
+    } catch(e){
+        console.error("INIT ERROR:", e);
     }
-
-    listen();
 };
 
-const listen = () => {
+const startListeners = () => {
+    console.log("START LISTENERS");
+
     const fRef = db.collection('families').doc(familyId.value);
 
     fRef.onSnapshot(s=>{
-        familyPot.value = s.data()?.familyPot || 0;
+        const data = s.data();
+        if (data) {
+            familyPot.value = data.familyPot || 0;
+        }
     });
 
-    fRef.collection('members').doc(user.value.uid)
+    fRef.collection('members')
+        .doc(user.value.uid)
         .onSnapshot(s=>{
-            credits.value = s.data()?.credits || 0;
+            const data = s.data();
+            if (data) {
+                credits.value = data.credits || 0;
+            }
         });
 
     fRef.collection('tasks')
         .onSnapshot(s=>{
-            tasks.value = s.docs.map(d=>({id:d.id,...d.data()}));
+            tasks.value = s.docs.map(d=>{
+                return { id:d.id, ...(d.data() || {}) };
+            });
         });
 };
 
@@ -171,9 +196,8 @@ const boost = async () => {
             tx.update(mRef,{credits:firebase.firestore.FieldValue.increment(-val)});
             tx.update(fRef,{familyPot:firebase.firestore.FieldValue.increment(val)});
         });
-
     } catch(e){
-        console.error(e);
+        console.error("BOOST ERROR:", e);
     }
 };
 
@@ -181,58 +205,78 @@ const cashout = async () => {
     const val = credits.value;
     if (val <=0) return;
 
-    await db.collection('families')
-        .doc(familyId.value)
-        .collection('members')
-        .doc(user.value.uid)
-        .update({
-            credits:0,
-            pendingPayout:val
-        });
+    try {
+        await db.collection('families')
+            .doc(familyId.value)
+            .collection('members')
+            .doc(user.value.uid)
+            .update({
+                credits:0,
+                pendingPayout:val
+            });
+    } catch(e){
+        console.error("CASHOUT ERROR:", e);
+    }
 };
 
 const claimTask = async (t) => {
-    await db.collection('families')
-        .doc(familyId.value)
-        .collection('tasks')
-        .doc(t.id)
-        .update({
-            status:'pending',
-            claimedByUid:user.value.uid
-        });
+    try {
+        await db.collection('families')
+            .doc(familyId.value)
+            .collection('tasks')
+            .doc(t.id)
+            .update({
+                status:'pending',
+                claimedByUid:user.value.uid
+            });
+    } catch(e){
+        console.error("CLAIM ERROR:", e);
+    }
 };
 
 const approveTask = async (t) => {
-    const fRef = db.collection('families').doc(familyId.value);
+    try {
+        const fRef = db.collection('families').doc(familyId.value);
 
-    await db.runTransaction(async tx=>{
-        const mRef = fRef.collection('members').doc(t.claimedByUid);
+        await db.runTransaction(async tx=>{
+            const mRef = fRef.collection('members').doc(t.claimedByUid);
 
-        tx.update(mRef,{
-            credits:firebase.firestore.FieldValue.increment(t.tokens)
+            tx.update(mRef,{
+                credits:firebase.firestore.FieldValue.increment(t.tokens)
+            });
+
+            tx.update(fRef.collection('tasks').doc(t.id),{
+                status:'active',
+                claimedByUid:null
+            });
         });
 
-        tx.update(fRef.collection('tasks').doc(t.id),{
-            status:'active',
-            claimedByUid:null
-        });
-    });
+    } catch(e){
+        console.error("APPROVE ERROR:", e);
+    }
 };
 
 const rejectTask = async (t) => {
-    await db.collection('families')
-        .doc(familyId.value)
-        .collection('tasks')
-        .doc(t.id)
-        .update({
-            status:'active',
-            claimedByUid:null
-        });
+    try {
+        await db.collection('families')
+            .doc(familyId.value)
+            .collection('tasks')
+            .doc(t.id)
+            .update({
+                status:'active',
+                claimedByUid:null
+            });
+    } catch(e){
+        console.error("REJECT ERROR:", e);
+    }
 };
 
 onMounted(()=>{
+    console.log("MOUNTED");
+
     auth.onAuthStateChanged(u=>{
-        console.log("AUTH:",u);
+        console.log("AUTH STATE:", u);
+
         if (u){
             user.value = u;
             init(u);
