@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD HUB V4 - FIXED</title>
+    <title>SQUAD HUB V4 - STABLE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -139,7 +139,7 @@
                 const activeTasks = ref([]); const potLogs = ref([]); const memberListDetails = ref([]);
                 const successMsg = ref(''); const currentTime = ref(new Date()); const showStats = ref(false);
 
-                // Helper Functies (Binnen setup scope)
+                // Helper Functies
                 const triggerSuccess = (msg) => { successMsg.value = msg; setTimeout(() => successMsg.value = '', 4500); };
                 const isTaskLocked = (t) => t.nextAvailableAt && currentTime.value < t.nextAvailableAt.toDate();
                 const getRank = (t) => t >= 1500 ? 'Mythic' : t >= 700 ? 'Legend' : t >= 300 ? 'Elite' : t >= 100 ? 'Active' : 'Rookie';
@@ -186,14 +186,13 @@
                     const newFamilyRef = db.collection('families').doc(u.uid);
                     await newFamilyRef.set({
                         familyName: "Mijn Squad", createdAt: firebase.firestore.Timestamp.now(), createdBy: u.uid,
-                        member_uids: [u.uid], admin_uids: [u.uid], familyPot: 0, familyGoal: "Squad Objective 🎯", familyGoalAmount: 100
+                        member_uids: [u.uid], admin_uids: [u.uid], familyPot: 0, familyGoal: "Squad Goal 🎯", familyGoalAmount: 100
                     });
                     await newFamilyRef.collection('members').doc(u.uid).set({
                         uid: u.uid, name: u.displayName || u.email.split('@')[0], credits: 0, totalEarned: 0, pendingPayout: 0
                     });
                     familyId.value = newFamilyRef.id; localStorage.setItem('familyId', newFamilyRef.id);
                     role.value = 'admin'; initListeners(newFamilyRef.id, u);
-                    triggerSuccess("Squad Created! 🚀");
                 };
 
                 onMounted(() => {
@@ -208,7 +207,14 @@
                     stats: computed(() => {
                         const startOfDay = new Date(currentTime.value).setHours(0,0,0,0);
                         return [
-                            { label: 'Vandaag verdiend', value: potLogs.value.filter(l => l.category === 'MISSION' && l.timestamp?.toDate() >= startOfDay).reduce((a,c)=>a+c.amount,0), type: 'COIN' },
+                            { 
+                                label: 'Vandaag verdiend', 
+                                // ✅ VERBETERDE GUARD VOOR TIMESTAMP
+                                value: potLogs.value
+                                    .filter(l => l.category === 'MISSION' && l.timestamp && l.timestamp.toDate && l.timestamp.toDate() >= startOfDay)
+                                    .reduce((a,c)=>a+c.amount,0), 
+                                type: 'COIN' 
+                            },
                             { label: 'Totaal XP', value: personalTotalEarned.value, type: 'XP' },
                             { label: 'Huidige Rank', value: getRank(personalTotalEarned.value), type: 'STR' }
                         ];
@@ -260,13 +266,13 @@
                             const fRef = db.collection('families').doc(familyId.value);
                             const snap = await tx.get(mRef);
                             const amount = snap.data().pendingPayout;
-                            if (!amount || amount <= 0) throw "invalid"; // Safety Guard
+                            if (!amount || amount <= 0) throw "invalid"; 
                             tx.update(mRef, { pendingPayout: 0 });
                             tx.set(fRef.collection('potLogs').doc(), {
                                 userId: member.id, amount: -amount, category: 'PAYDAY', timestamp: firebase.firestore.Timestamp.now(), description: 'Cash Out'
                             });
                         });
-                        triggerSuccess("Payday verified");
+                        triggerSuccess("Payday geverifieerd! 💸");
                     },
                     approveTask: async (t) => {
                         await db.runTransaction(async (tx) => {
@@ -274,24 +280,24 @@
                             const fRef = db.collection('families').doc(familyId.value);
                             const tSnap = await tx.get(tRef);
                             const taskData = tSnap.data();
-                            if (taskData.status !== 'pending') throw "Already processed";
+                            if (taskData.status !== 'pending') throw "processed";
                             const mRef = fRef.collection('members').doc(taskData.claimedByUid);
                             let streak = taskData.streak || 0;
+                            const last = taskData.lastCompletedDate?.toDate();
                             const limit = taskData.type === 'daily' ? 86400000 : taskData.type === 'weekly' ? 604800000 : 2419200000;
-                            if (taskData.lastCompletedDate?.toDate() && (new Date() - taskData.lastCompletedDate.toDate()) > limit * 1.5) streak = 0;
+                            if (last && (new Date() - last) > limit * 1.5) streak = 0;
                             streak++;
                             const xpGain = Math.round(3 + taskData.tokens * 0.4 + Math.pow(streak, 1.2));
                             const nextAt = new Date(); nextAt.setHours(0,0,0,0);
                             if (taskData.type === 'daily') nextAt.setDate(nextAt.getDate() + 1);
-                            else if (taskData.type === 'weekly') nextAt.setDate(nextAt.getDate() + 7);
                             tx.update(mRef, { credits: firebase.firestore.FieldValue.increment(taskData.tokens), totalEarned: firebase.firestore.FieldValue.increment(xpGain) });
                             tx.set(fRef.collection('potLogs').doc(), { userId: taskData.claimedByUid, amount: taskData.tokens, category: 'MISSION', timestamp: firebase.firestore.Timestamp.now(), description: taskData.title });
                             tx.update(tRef, { status: taskData.type === 'once' ? 'completed' : 'active', lastCompletedDate: firebase.firestore.Timestamp.now(), nextAvailableAt: nextAt, streak, claimedByUid: null });
                         });
-                        triggerSuccess("Missie geverifieerd! 🪙");
+                        triggerSuccess("Geverifieerd!");
                     },
                     claimTask: async (t) => {
-                        if (t.status !== 'active') return; // Double click prevention
+                        if (t.status !== 'active') return; 
                         await db.collection('families').doc(familyId.value).collection('tasks').doc(t.id).update({ status: 'pending', claimedByUid: user.value.uid, claimedAt: firebase.firestore.Timestamp.now() });
                         triggerSuccess("Ingezonden ✔");
                     },
