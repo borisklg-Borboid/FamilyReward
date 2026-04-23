@@ -30,38 +30,19 @@
             letter-spacing: -0.01em; 
         }
         
-        /* RARITY CARDS */
-        .card-common { 
-            background: linear-gradient(135deg, #374151 0%, #111827 100%); 
-            border-top: 4px solid var(--common); 
-        }
-        .card-uncommon { 
-            background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); 
-            border-top: 4px solid var(--uncommon); 
-        }
-        .card-epic { 
-            background: linear-gradient(135deg, #581c87 0%, #2e1065 100%); 
-            border-top: 4px solid var(--epic); 
-        }
+        .card-common { background: linear-gradient(135deg, #374151 0%, #111827 100%); border-top: 4px solid var(--common); }
+        .card-uncommon { background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); border-top: 4px solid var(--uncommon); }
+        .card-epic { background: linear-gradient(135deg, #581c87 0%, #2e1065 100%); border-top: 4px solid var(--epic); }
         
-        /* LEGENDARY BLING */
         .card-legendary { 
             background: linear-gradient(135deg, #78350f 0%, #451a03 100%); 
             border-top: 4px solid var(--legendary); 
-            position: relative; 
-            overflow: hidden; 
-            box-shadow: 0 0 20px rgba(240, 173, 29, 0.4);
+            position: relative; overflow: hidden; box-shadow: 0 0 20px rgba(240, 173, 29, 0.4);
         }
         .card-legendary::after {
-            content: ''; 
-            position: absolute; 
-            top: -50%; 
-            left: -50%; 
-            width: 200%; 
-            height: 200%;
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
             background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
-            transform: rotate(45deg); 
-            animation: shine 3s infinite;
+            transform: rotate(45deg); animation: shine 3s infinite;
         }
         @keyframes shine { 
             0% { margin-left: -100%; } 
@@ -152,7 +133,7 @@
                          class="p-5 rounded-2xl border-t-4 flex flex-col gap-4 relative shadow-xl">
                         
                         <div v-if="isUpcoming(t)" class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-700 text-white fortnite-font text-[8px] px-3 py-1 rounded-full shadow-xl border border-white/20 whitespace-nowrap z-10">COMING SOON: {{ daysShort[t.selectedDay || 0] }}</div>
-                        <div v-if="role === 'admin' && t.status === 'pending'" class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-black fortnite-font text-[9px] px-4 py-1 rounded-full shadow-xl animate-bounce border-2 border-black whitespace-nowrap z-10">CLAIMED BY {{ t.completedByName }} - APPROVE NOW</div>
+                        <div v-if="role === 'admin' && t.status === 'pending'" class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-black fortnite-font text-[9px] px-4 py-1 rounded-full shadow-xl animate-bounce border-2 border-black whitespace-nowrap z-10 uppercase">CLAIM DOOR {{ t.completedByName }} - APPROVE NOW</div>
                         
                         <div class="flex justify-between items-start">
                             <div @click="role === 'admin' ? openEditModal(t) : null" :class="role === 'admin' ? 'cursor-pointer' : ''" class="flex-1">
@@ -206,13 +187,13 @@
                 <div class="absolute inset-0 bg-black/95 backdrop-blur-xl" @click="showGoalModal = false"></div>
                 <div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-8 relative border border-blue-500/30 text-center shadow-2xl">
                     <h3 class="fortnite-font text-xl mb-2 text-blue-400 uppercase">Squad Target</h3>
-                    <div class="space-y-4 my-6">
-                        <div class="text-left">
+                    <div class="space-y-4 my-6 text-left">
+                        <div>
                             <label class="text-[8px] font-black text-slate-500 uppercase ml-2 mb-1 block">Beloning</label>
                             <input v-model="newGoalName" :disabled="familyPot > 0" placeholder="Beloning" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none border border-white/5 disabled:opacity-50">
                         </div>
-                        <div class="text-left">
-                            <label class="text-[8px] font-black text-slate-500 uppercase ml-2 mb-1 block">Totaal Goud Nodig</label>
+                        <div>
+                            <label class="text-[8px] font-black text-slate-500 uppercase ml-2 mb-1 block">Goud Nodig</label>
                             <input v-model.number="newGoalAmount" :disabled="familyPot > 0" type="number" placeholder="Doelbedrag" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none border border-white/5 disabled:opacity-50">
                         </div>
                     </div>
@@ -294,8 +275,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(); const auth = firebase.auth(); const { createApp, ref, computed, onMounted } = Vue;
 
-        // ACTIVEREN OFFLINE PERSISTENCE
-        db.enablePersistence().catch(err => console.error("Persistence failed", err));
+        db.enablePersistence().catch(err => console.error("Offline failed", err));
 
         createApp({
             setup() {
@@ -377,7 +357,7 @@
                                 personalCredits.value = memberListDetails.value.find(m => m.email?.toLowerCase() === u.email.toLowerCase())?.credits || 0;
                             });
 
-                            // RECURRENCE ENGINE
+                            // RECURRENCE ENGINE - FIXED AUTO RESET
                             db.collection('tasks').where('familyId', '==', familyId.value).onSnapshot(tSnap => {
                                 const tasks = tSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                                 const now = new Date();
@@ -389,11 +369,20 @@
                                         let shouldReset = false;
 
                                         if (t.type === 'daily') {
-                                            if (last.getDate() !== now.getDate() || last.getMonth() !== now.getMonth()) shouldReset = true;
+                                            // Reset als het vandaag een andere dag is dan de voltooiing
+                                            if (last.getDate() !== now.getDate() || last.getMonth() !== now.getMonth() || last.getFullYear() !== now.getFullYear()) {
+                                                shouldReset = true;
+                                            }
                                         } else if (t.type === 'weekly') {
-                                            if (todayDay === (t.selectedDay || 0) && (now.getTime() - last.getTime() > 86400000)) shouldReset = true;
+                                            // Reset als het vandaag de gewenste dag is EN de missie niet gisteren/vandaag al is voltooid
+                                            if (todayDay === (t.selectedDay || 0) && (now.getTime() - last.getTime() > 86400000)) {
+                                                shouldReset = true;
+                                            }
                                         } else if (t.type === 'monthly') {
-                                            if (now.getTime() - last.getTime() >= 2419200000) shouldReset = true;
+                                            // Reset na 28 dagen
+                                            if (now.getTime() - last.getTime() >= 2419200000) {
+                                                shouldReset = true;
+                                            }
                                         }
 
                                         if (shouldReset) {
@@ -454,8 +443,12 @@
                     saveGoal: async () => { await db.collection('families').doc(familyId.value).update({ familyGoal: newGoalName.value, familyGoalAmount: newGoalAmount.value, targetStartTime: new Date() }); showGoalModal.value = false; },
                     saveTask: async () => { if (!newTask.value.title) return; let data = { ...newTask.value, familyId: familyId.value }; if (data.assignedTo) data.assignedToName = memberListDetails.value.find(m => m.email?.toLowerCase() === data.assignedTo)?.name || ''; if (isEditing.value) await db.collection('tasks').doc(newTask.value.id).update(data); else await db.collection('tasks').add({ ...data, status: 'active', createdAt: new Date() }); showCreateModal.value = false; },
                     approveTask: async (task) => { 
-                        if (task.rewardType === 'familiepot') { await db.collection('families').doc(familyId.value).update({ familyPot: firebase.firestore.FieldValue.increment(task.tokens) }); await db.collection('families').doc(familyId.value).collection('potLogs').add({ type: 'MISSION', userName: task.completedByName, description: task.title, amount: task.tokens, timestamp: new Date() }); }
-                        else { const m = memberListDetails.value.find(x => x.email?.toLowerCase() === task.completedBy); if (m) await db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: firebase.firestore.FieldValue.increment(task.tokens) }); }
+                        const m = memberListDetails.value.find(x => x.email?.toLowerCase() === task.completedBy); 
+                        if (m) {
+                            if (task.rewardType === 'familiepot') { await db.collection('families').doc(familyId.value).update({ familyPot: firebase.firestore.FieldValue.increment(task.tokens) }); }
+                            else { await db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: firebase.firestore.FieldValue.increment(task.tokens) }); }
+                            await db.collection('families').doc(familyId.value).collection('potLogs').add({ type: 'MISSION', userName: m.name, description: task.title, amount: task.tokens, timestamp: new Date() }); 
+                        }
                         if (task.type === 'once') await db.collection('tasks').doc(task.id).delete(); 
                         else await db.collection('tasks').doc(task.id).update({ status: 'completed', completedBy: null, lastCompletedDate: new Date() });
                     },
@@ -464,6 +457,7 @@
                     rejectTask: async (t) => await db.collection('tasks').doc(t.id).update({ status: 'active', completedBy: null, completedByName: null }),
                     confirmDonate: async () => { if (donateAmount.value <= 0 || donateAmount.value > personalCredits.value) return; if (confirm(`🎁 ${donateAmount.value} schenken?`)) { const m = memberListDetails.value.find(x => x.email?.toLowerCase() === user.value.email.toLowerCase()); await db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: firebase.firestore.FieldValue.increment(-donateAmount.value) }); await db.collection('families').doc(familyId.value).update({ familyPot: firebase.firestore.FieldValue.increment(donateAmount.value) }); await db.collection('families').doc(familyId.value).collection('potLogs').add({ type: 'DONATION', userName: m.name, description: 'SQUAD GIFT', amount: donateAmount.value, timestamp: new Date() }); showDonateModal.value = false; donateAmount.value = 0; } },
                     requestPayday: async () => { if (paydayAmount.value <= 0 || paydayAmount.value > personalCredits.value) return; await db.collection('families').doc(familyId.value).collection('payday').add({ amount: paydayAmount.value, requestedBy: user.value.email.toLowerCase(), requestedByName: user.value.displayName.split(' ')[0], status: 'pending', timestamp: new Date() }); showPaydayModal.value = false; paydayAmount.value = 0; },
+                    claimSquadReward: async () => { if (confirm("Reset pot?")) { await db.collection('families').doc(familyId.value).update({ familyPot: 0, targetStartTime: null }); const b = db.batch(); (await db.collection('families').doc(familyId.value).collection('potLogs').get()).forEach(d => b.delete(d.ref)); await b.commit(); } },
                     toggleAdmin: async (e, n) => { const mail = e.toLowerCase(); if (adminEmails.value.includes(mail)) { await db.collection('families').doc(familyId.value).update({ admin_emails: firebase.firestore.FieldValue.arrayRemove(mail) }); alert(`${n} = Recruit`); } else { await db.collection('families').doc(familyId.value).update({ admin_emails: firebase.firestore.FieldValue.arrayUnion(mail) }); alert(`${n} = Officer`); } },
                     addMember: async () => { const e = newMemberEmail.value.toLowerCase().trim(); if(!e || !newMemberName.value) return; await db.collection('families').doc(familyId.value).update({ member_emails: firebase.firestore.FieldValue.arrayUnion(e) }); await db.collection('families').doc(familyId.value).collection('members').add({ name: newMemberName.value, email: e, credits: 0, createdAt: new Date() }); newMemberName.value = ''; newMemberEmail.value = ''; },
                     editCredits: (m) => { const a = prompt(`New Gold:`, m.credits); if (a) db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: parseInt(a) }); },
