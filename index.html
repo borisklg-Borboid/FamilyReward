@@ -1,270 +1,255 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SQUAD HUB</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&display=swap" rel="stylesheet">
-    <style>
-        :root { --daily: #4ade80; --weekly: #60a5fa; --monthly: #a855f7; --once: #f87171; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; min-height: 100vh; }
-        .fortnite-font { font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; }
-        .card-active { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid rgba(255,255,255,0.05); }
-        .card-pending { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #eab308; box-shadow: 0 0 15px rgba(234, 179, 8, 0.2); }
-        .card-cooldown { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
-        [v-cloak] { display: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQUAD HUB</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<style>
+body { background:#0f172a; color:white; font-family:sans-serif; }
+.card { background:#1e293b; padding:16px; border-radius:16px; }
+[v-cloak]{display:none;}
+</style>
 </head>
+
 <body>
-    <div id="app">
-        <div v-if="!familyId" class="fixed inset-0 bg-[#0f172a] flex flex-col items-center justify-center z-[500] p-8 text-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500 mb-6"></div>
-            <h2 class="fortnite-font italic text-xl mb-2">Connecting to Squad...</h2>
-            <p class="text-slate-500 text-sm mb-8">Dit duurt langer dan normaal. Geen Squad gevonden?</p>
-            <button @click="forceCreateFamily" class="bg-blue-600 px-8 py-3 rounded-2xl fortnite-font italic text-sm shadow-lg active:scale-95 transition-all">
-                Start Nieuwe Squad
-            </button>
-        </div>
+<div id="app" v-cloak class="max-w-md mx-auto p-4">
 
-        <div v-if="successMsg" class="fixed inset-x-0 top-10 z-[1000] flex justify-center px-4 pointer-events-none">
-            <div class="bg-blue-600 text-white fortnite-font px-6 py-4 rounded-2xl shadow-2xl border-2 border-white/20 uppercase italic text-sm animate-bounce">
-                {{ successMsg }}
-            </div>
-        </div>
+<!-- LOGIN -->
+<div v-if="!user" class="text-center mt-20">
+    <button @click="login" class="bg-white text-black px-6 py-3 rounded-xl">
+        Login met Google
+    </button>
+</div>
 
-        <template v-if="user && familyId">
-            <div class="max-w-md mx-auto min-h-screen flex flex-col px-4 pb-24">
-                <header class="py-6 flex justify-between items-center">
-                    <div class="flex flex-col">
-                        <h1 class="fortnite-font text-2xl italic tracking-tighter leading-none">SQUAD HUB</h1>
-                        <p class="text-[9px] text-blue-400 font-bold uppercase tracking-widest opacity-80">{{ familyName }}</p>
-                    </div>
-                    <button @click="logout" class="text-slate-500 text-[10px] font-black bg-slate-800/50 px-3 py-1 rounded-lg">QUIT</button>
-                </header>
+<!-- APP -->
+<div v-if="user && familyId">
 
-                <section class="mb-6 space-y-4">
-                    <div @click="showStats = !showStats" class="bg-slate-900 p-6 rounded-[2rem] border border-white/5 shadow-2xl text-yellow-400 cursor-pointer active:scale-[0.98] transition-all">
-                        <div class="flex justify-between items-center mb-1 text-[10px] font-black uppercase opacity-60">
-                            <span>Vault</span>
-                            <span>{{ rankInfo.label }}</span>
-                        </div>
-                        <div class="flex justify-between items-end">
-                            <p class="fortnite-font text-5xl leading-none italic">{{ personalCredits }} 🪙</p>
-                            <div v-if="pendingPayout > 0" class="text-[9px] text-yellow-500 font-black uppercase italic animate-pulse text-right">
-                                 ⏳ Gereserveerd:<br>{{ pendingPayout }} 🪙
-                            </div>
-                        </div>
-                        <div v-if="showStats" class="mt-4 pt-4 border-t border-white/5 grid grid-cols-2 gap-4">
-                            <div v-for="s in stats" :key="s.label">
-                                <p class="text-[8px] font-black uppercase text-slate-500">{{ s.label }}</p>
-                                <p class="fortnite-font text-sm text-white">{{ s.value }} {{ s.type === 'XP' ? '⭐' : '🪙' }}</p>
-                            </div>
-                        </div>
-                    </div>
+    <h1 class="text-xl mb-4">SQUAD HUB</h1>
 
-                    <div v-if="role === 'admin' && pendingPayoutList.length > 0" class="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-2xl space-y-2">
-                        <p class="text-[8px] font-black uppercase text-yellow-500">Verify Payday:</p>
-                        <div v-for="m in pendingPayoutList" :key="m.id" class="flex justify-between items-center bg-black/20 p-3 rounded-xl">
-                            <span class="text-[10px] font-black">{{ m.name }}: {{ m.pendingPayout }} 🪙</span>
-                            <button @click="confirmPayout(m)" class="bg-green-500 text-white text-[9px] font-black px-4 py-1.5 rounded-lg uppercase italic shadow-md">Verify</button>
-                        </div>
-                    </div>
-
-                    <div v-if="role !== 'admin'" class="grid grid-cols-2 gap-3">
-                        <button @click="handleBoost" :disabled="personalCredits <= 0" class="bg-blue-600 text-white fortnite-font text-[10px] py-3 rounded-xl uppercase italic shadow-lg active:scale-95 disabled:opacity-30">🤝 Squad Boost</button>
-                        <button v-if="!pendingPayout" @click="handlePayoutRequest" class="bg-yellow-500 text-black fortnite-font text-[10px] py-3 rounded-xl uppercase italic shadow-lg active:scale-95">💸 Cash Out</button>
-                    </div>
-
-                    <div class="bg-blue-600/10 p-5 rounded-[2rem] border border-blue-500/20">
-                        <div class="flex justify-between items-center mb-2 text-blue-400 text-[10px] fortnite-font">
-                            <span class="italic uppercase">🎯 {{ familyGoal || 'Objective' }}</span>
-                            <span>{{ familyPot }} / {{ familyGoalAmount }} 🪙</span>
-                        </div>
-                        <div class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
-                            <div class="h-full bg-blue-500 transition-all duration-1000" :style="{ width: Math.min(100, (familyPot/familyGoalAmount)*100) + '%' }"></div>
-                        </div>
-                        <p class="text-[9px] text-slate-400 mt-2 text-center uppercase font-bold italic">
-                            Nog {{ Math.max(0, familyGoalAmount - familyPot) }} 🪙 tot de loot!
-                        </p>
-                    </div>
-                </section>
-
-                <main class="space-y-4">
-                    <div v-for="t in sortedTasks" :key="t.id" 
-                         :class="[t.status === 'pending' ? 'card-pending' : 'card-active', isTaskLocked(t) ? 'card-cooldown' : '']"
-                         class="p-5 rounded-2xl border-t-4 transition-all">
-                        <div class="flex justify-between items-start">
-                            <h3 class="fortnite-font text-lg leading-tight">{{ t.title }}</h3>
-                            <span class="fortnite-font text-sm text-yellow-400">{{ t.tokens }} 🪙</span>
-                        </div>
-                        
-                        <div v-if="t.status === 'pending' && role === 'admin'" class="flex gap-2 mt-4">
-                            <button @click="approveTask(t)" class="flex-1 bg-green-500 py-2 rounded-xl text-[10px] fortnite-font uppercase italic">Verify</button>
-                            <button @click="rejectTask(t)" class="flex-1 bg-rose-600 py-2 rounded-xl text-[10px] fortnite-font uppercase italic">Deny</button>
-                        </div>
-                        <button v-else-if="role !== 'admin' && t.status === 'active' && !isTaskLocked(t)" 
-                                @click="claimTask(t)" 
-                                class="w-full mt-4 bg-white text-black py-3 rounded-xl fortnite-font text-[10px] uppercase italic active:scale-95 shadow-xl">Voltooid!</button>
-                    </div>
-                </main>
-            </div>
-        </template>
+    <!-- BALANCE -->
+    <div class="card mb-4">
+        <p>Saldo</p>
+        <h2 class="text-3xl">{{ credits }} 🪙</h2>
     </div>
 
-    <script>
-        const firebaseConfig = { apiKey: "AIzaSyAGSSTZivu3OfKjdR-61BNy0WlXFeH9C80", authDomain: "familyreward-c4582.firebaseapp.com", projectId: "familyreward-c4582", storageBucket: "familyreward-c4582.firebasestorage.app", messagingSenderId: "500697306700", appId: "1:500697306700:web:e812d2b9891c4d2f64c6e9" };
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        const { createApp, ref, computed, onMounted } = Vue;
+    <!-- ACTIONS -->
+    <div class="grid grid-cols-2 gap-2 mb-4">
+        <button @click="boost" class="bg-blue-500 p-3 rounded-xl">Boost</button>
+        <button @click="cashout" class="bg-yellow-500 p-3 rounded-xl">Cashout</button>
+    </div>
 
-        createApp({
-            setup() {
-                const user = ref(null); const familyId = ref(null); const familyName = ref('Squad Hub'); const role = ref('user');
-                const personalCredits = ref(0); const personalTotalEarned = ref(0); const pendingPayout = ref(0);
-                const familyPot = ref(0); const familyGoalAmount = ref(100); const familyGoal = ref('');
-                const activeTasks = ref([]); const potLogs = ref([]); const memberListDetails = ref([]);
-                const successMsg = ref(''); const showStats = ref(false); const currentTime = ref(new Date());
+    <!-- POT -->
+    <div class="card mb-4">
+        <p>Family Pot</p>
+        <h2 class="text-2xl">{{ familyPot }} 🪙</h2>
+    </div>
 
-                const triggerSuccess = (msg) => { successMsg.value = msg; setTimeout(() => successMsg.value = '', 4000); };
-                const isTaskLocked = (t) => t.nextAvailableAt && currentTime.value < t.nextAvailableAt.toDate();
+    <!-- TASKS -->
+    <div class="space-y-2">
+        <div v-for="t in tasks" :key="t.id" class="card">
+            <p>{{ t.title }} ({{ t.tokens }} 🪙)</p>
 
-                const initListeners = (fid, u) => {
-                    familyId.value = fid;
-                    db.collection('families').doc(fid).onSnapshot(snap => {
-                        if (snap.exists) {
-                            const d = snap.data();
-                            familyPot.value = d.familyPot || 0;
-                            familyGoalAmount.value = d.familyGoalAmount || 100;
-                            familyGoal.value = d.familyGoal || '';
-                            familyName.value = d.familyName || 'Mijn Squad';
-                        }
-                    });
-                    db.collection('families').doc(fid).collection('members').doc(u.uid).onSnapshot(s => {
-                        if (s.exists) {
-                            const d = s.data();
-                            personalCredits.value = d.credits || 0;
-                            personalTotalEarned.value = d.totalEarned || 0;
-                            pendingPayout.value = d.pendingPayout || 0;
-                        }
-                    });
-                    db.collection('families').doc(fid).collection('tasks').onSnapshot(s => {
-                        activeTasks.value = s.docs.map(d => ({ id: d.id, ...d.data() }));
-                    });
-                    db.collection('families').doc(fid).collection('potLogs').where('userId', '==', u.uid).orderBy('timestamp', 'desc').limit(50).onSnapshot(s => {
-                        potLogs.value = s.docs.map(d => d.data());
-                    });
-                    db.collection('families').doc(fid).collection('members').onSnapshot(s => {
-                        memberListDetails.value = s.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    });
-                };
+            <button v-if="t.status==='active'" @click="claimTask(t)" class="bg-white text-black px-3 py-1 rounded">
+                Klaar
+            </button>
 
-                const forceCreateFamily = async () => {
-                    if (!user.value) return;
-                    const u = user.value;
-                    const fid = u.uid;
-                    await db.collection('families').doc(fid).set({
-                        familyName: "Mijn Squad", createdAt: firebase.firestore.Timestamp.now(),
-                        member_uids: [fid], admin_uids: [fid], familyPot: 0, familyGoal: "Squad Goal", familyGoalAmount: 100
-                    });
-                    await db.collection('families').doc(fid).collection('members').doc(fid).set({
-                        uid: fid, name: u.displayName || u.email.split('@')[0], credits: 0, totalEarned: 0, pendingPayout: 0
-                    });
-                    initListeners(fid, u);
-                    triggerSuccess("Squad Hub Geactiveerd! 🚀");
-                };
+            <div v-if="role==='admin' && t.status==='pending'" class="flex gap-2 mt-2">
+                <button @click="approveTask(t)" class="bg-green-500 px-2">OK</button>
+                <button @click="rejectTask(t)" class="bg-red-500 px-2">X</button>
+            </div>
+        </div>
+    </div>
 
-                onMounted(() => {
-                    auth.onAuthStateChanged(async u => {
-                        if (u) {
-                            user.value = u;
-                            const q = await db.collection('families').where('member_uids', 'array-contains', u.uid).get();
-                            if (!q.empty) {
-                                const fDoc = q.docs[0];
-                                role.value = (fDoc.data().admin_uids || []).includes(u.uid) ? 'admin' : 'user';
-                                initListeners(fDoc.id, u);
-                            }
-                        }
-                    });
-                    setInterval(() => currentTime.value = new Date(), 60000);
-                });
+</div>
 
-                const rankInfo = computed(() => {
-                    const xp = personalTotalEarned.value;
-                    if (xp >= 1500) return { label: 'Mythic', color: 'text-pink-500' };
-                    if (xp >= 100) return { label: 'Active', color: 'text-blue-400' };
-                    return { label: 'Rookie', color: 'text-slate-500' };
-                });
+<!-- DEBUG -->
+<div v-if="user && !familyId" class="text-red-400 mt-10">
+    Geen family gevonden...
+</div>
 
-                return {
-                    user, familyId, familyName, role, personalCredits, personalTotalEarned, familyPot, familyGoalAmount, familyGoal,
-                    activeTasks, successMsg, showStats, pendingPayout, rankInfo,
-                    stats: computed(() => {
-                        const startOfDay = new Date(currentTime.value).setHours(0,0,0,0);
-                        return [
-                            { label: 'Vandaag verdiend', value: potLogs.value.filter(l => l.category === 'MISSION' && l.timestamp && l.timestamp.toDate && l.timestamp.toDate() >= startOfDay).reduce((a,c)=>a+c.amount,0), type: 'COIN' },
-                            { label: 'Totaal XP', value: personalTotalEarned.value, type: 'XP' }
-                        ];
-                    }),
-                    pendingPayoutList: computed(() => memberListDetails.value.filter(m => (m.pendingPayout || 0) > 0)),
-                    sortedTasks: computed(() => [...activeTasks.value].sort((a,b) => (a.status === 'pending' ? -1 : 1))),
-                    potPercentage: computed(() => Math.min(100, (familyPot.value / (familyGoalAmount.value || 1)) * 100)),
-                    logout: () => auth.signOut().then(() => location.reload()),
-                    handleBoost: async () => {
-                        const amt = window.prompt(`Boost de squad! Hoeveel 🪙?`);
-                        const val = parseInt(amt);
-                        if (!val || val <= 0 || val > personalCredits.value) return;
-                        await db.runTransaction(async (tx) => {
-                            const fRef = db.collection('families').doc(familyId.value);
-                            const mRef = fRef.collection('members').doc(user.value.uid);
-                            tx.update(mRef, { credits: firebase.firestore.FieldValue.increment(-val) });
-                            tx.update(fRef, { familyPot: firebase.firestore.FieldValue.increment(val) });
-                            tx.set(fRef.collection('potLogs').doc(), { userId: user.value.uid, amount: val, category: 'BOOST', timestamp: firebase.firestore.Timestamp.now(), description: 'Squad Boost' });
-                        });
-                        triggerSuccess(`+${val} 🪙 naar de squad! 🚀`);
-                    },
-                    handlePayoutRequest: async () => {
-                        const val = personalCredits.value;
-                        if (val < 10) return triggerSuccess("Spaar tot 10 🪙");
-                        await db.collection('families').doc(familyId.value).collection('members').doc(user.value.uid).update({ credits: 0, pendingPayout: val });
-                        triggerSuccess("Request verzonden! 💸");
-                    },
-                    confirmPayout: async (m) => {
-                        const amount = m.pendingPayout;
-                        await db.runTransaction(async (tx) => {
-                            const mRef = db.collection('families').doc(familyId.value).collection('members').doc(m.id);
-                            tx.update(mRef, { pendingPayout: 0 });
-                            tx.set(db.collection('families').doc(familyId.value).collection('potLogs').doc(), { userId: m.id, amount: -amount, category: 'PAYDAY', timestamp: firebase.firestore.Timestamp.now() });
-                        });
-                        triggerSuccess("Payday verified!");
-                    },
-                    approveTask: async (t) => {
-                        await db.runTransaction(async (tx) => {
-                            const tRef = db.collection('families').doc(familyId.value).collection('tasks').doc(t.id);
-                            const mRef = db.collection('families').doc(familyId.value).collection('members').doc(t.claimedByUid);
-                            const xpGain = Math.round(3 + t.tokens * 0.4);
-                            tx.update(mRef, { credits: firebase.firestore.FieldValue.increment(t.tokens), totalEarned: firebase.firestore.FieldValue.increment(xpGain) });
-                            tx.set(db.collection('families').doc(familyId.value).collection('potLogs').doc(), { userId: t.claimedByUid, amount: t.tokens, category: 'MISSION', timestamp: firebase.firestore.Timestamp.now() });
-                            tx.update(tRef, { status: 'active', claimedByUid: null });
-                        });
-                        triggerSuccess("Geverifieerd!");
-                    },
-                    claimTask: (t) => {
-                        if (t.status !== 'active') return;
-                        db.collection('families').doc(familyId.value).collection('tasks').doc(t.id).update({ status: 'pending', claimedByUid: user.value.uid, claimedAt: firebase.firestore.Timestamp.now() });
-                        triggerSuccess("Ingezonden ✔");
-                    },
-                    rejectTask: (t) => db.collection('families').doc(familyId.value).collection('tasks').doc(t.id).update({ status: 'active', claimedByUid: null }),
-                    forceCreateFamily, isTaskLocked
-                };
-            }
-        }).mount('#app');
-    </script>
+</div>
+
+<script>
+window.onerror = function (msg, url, line, col, error) {
+    console.error("GLOBAL ERROR:", msg, error);
+};
+
+const firebaseConfig = {
+    apiKey: "AIzaSy...",
+    authDomain: "familyreward-c4582.firebaseapp.com",
+    projectId: "familyreward-c4582"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+const { createApp, ref, onMounted } = Vue;
+
+createApp({
+setup() {
+
+const user = ref(null);
+const familyId = ref(null);
+const role = ref('user');
+
+const credits = ref(0);
+const familyPot = ref(0);
+const tasks = ref([]);
+
+const login = () => {
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+};
+
+const init = async (u) => {
+    console.log("INIT USER", u.uid);
+
+    const q = await db.collection('families')
+        .where('member_uids', 'array-contains', u.uid)
+        .get();
+
+    if (q.empty) {
+        console.log("CREATING FAMILY");
+
+        await db.collection('families').doc(u.uid).set({
+            member_uids:[u.uid],
+            admin_uids:[u.uid],
+            familyPot:0
+        });
+
+        await db.collection('families').doc(u.uid)
+            .collection('members').doc(u.uid)
+            .set({ credits:0 });
+
+        familyId.value = u.uid;
+        role.value = 'admin';
+
+    } else {
+        familyId.value = q.docs[0].id;
+
+        const data = q.docs[0].data();
+        role.value = data.admin_uids.includes(u.uid) ? 'admin':'user';
+    }
+
+    listen();
+};
+
+const listen = () => {
+    const fRef = db.collection('families').doc(familyId.value);
+
+    fRef.onSnapshot(s=>{
+        familyPot.value = s.data()?.familyPot || 0;
+    });
+
+    fRef.collection('members').doc(user.value.uid)
+        .onSnapshot(s=>{
+            credits.value = s.data()?.credits || 0;
+        });
+
+    fRef.collection('tasks')
+        .onSnapshot(s=>{
+            tasks.value = s.docs.map(d=>({id:d.id,...d.data()}));
+        });
+};
+
+const boost = async () => {
+    const val = parseInt(prompt("Hoeveel?"));
+    if (!val || val <=0) return;
+
+    try {
+        await db.runTransaction(async tx=>{
+            const fRef = db.collection('families').doc(familyId.value);
+            const mRef = fRef.collection('members').doc(user.value.uid);
+
+            tx.update(mRef,{credits:firebase.firestore.FieldValue.increment(-val)});
+            tx.update(fRef,{familyPot:firebase.firestore.FieldValue.increment(val)});
+        });
+
+    } catch(e){
+        console.error(e);
+    }
+};
+
+const cashout = async () => {
+    const val = credits.value;
+    if (val <=0) return;
+
+    await db.collection('families')
+        .doc(familyId.value)
+        .collection('members')
+        .doc(user.value.uid)
+        .update({
+            credits:0,
+            pendingPayout:val
+        });
+};
+
+const claimTask = async (t) => {
+    await db.collection('families')
+        .doc(familyId.value)
+        .collection('tasks')
+        .doc(t.id)
+        .update({
+            status:'pending',
+            claimedByUid:user.value.uid
+        });
+};
+
+const approveTask = async (t) => {
+    const fRef = db.collection('families').doc(familyId.value);
+
+    await db.runTransaction(async tx=>{
+        const mRef = fRef.collection('members').doc(t.claimedByUid);
+
+        tx.update(mRef,{
+            credits:firebase.firestore.FieldValue.increment(t.tokens)
+        });
+
+        tx.update(fRef.collection('tasks').doc(t.id),{
+            status:'active',
+            claimedByUid:null
+        });
+    });
+};
+
+const rejectTask = async (t) => {
+    await db.collection('families')
+        .doc(familyId.value)
+        .collection('tasks')
+        .doc(t.id)
+        .update({
+            status:'active',
+            claimedByUid:null
+        });
+};
+
+onMounted(()=>{
+    auth.onAuthStateChanged(u=>{
+        console.log("AUTH:",u);
+        if (u){
+            user.value = u;
+            init(u);
+        }
+    });
+});
+
+return {
+    user, familyId, role,
+    credits, familyPot, tasks,
+    login, boost, cashout,
+    claimTask, approveTask, rejectTask
+};
+
+}
+}).mount('#app');
+</script>
+
 </body>
 </html>
