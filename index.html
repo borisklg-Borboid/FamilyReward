@@ -18,7 +18,8 @@
         .card-uncommon { background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); border-top: 4px solid var(--uncommon); }
         .card-epic { background: linear-gradient(135deg, #581c87 0%, #2e1065 100%); border-top: 4px solid var(--epic); }
         .card-legendary { 
-            background: linear-gradient(135deg, #78350f 0%, #451a03 100%); border-top: 4px solid var(--legendary); 
+            background: linear-gradient(135deg, #78350f 0%, #451a03 100%); 
+            border-top: 4px solid var(--legendary); 
             position: relative; overflow: hidden; box-shadow: 0 0 20px rgba(240, 173, 29, 0.4);
         }
         .card-legendary::after {
@@ -59,7 +60,7 @@
                      :class="role !== 'admin' ? 'cursor-pointer active:scale-95' : ''">
                     <div class="flex justify-between items-start mb-2">
                         <p class="fortnite-font text-[10px] text-yellow-400 tracking-widest">{{ role === 'admin' ? 'Total Squad Credits' : 'Mijn Goudvoorraad' }}</p>
-                        <p v-if="role !== 'admin'" class="text-[8px] font-black text-yellow-400/40 uppercase italic tracking-tighter">Stats & Acties</p>
+                        <p v-if="role !== 'admin'" class="text-[8px] font-black text-yellow-400/40 uppercase italic">Stats & Acties</p>
                     </div>
                     <p class="fortnite-font text-5xl text-yellow-400 leading-none">{{ role === 'admin' ? totalOutstandingCredits : personalCredits }} 🪙</p>
                 </div>
@@ -70,11 +71,11 @@
                         <span class="fortnite-font text-[10px]">🪙 {{ familyPot }} / {{ familyGoalAmount }}</span>
                     </div>
                     <div class="w-full h-4 bg-slate-900 rounded-full overflow-hidden border border-blue-900/30 p-1">
-                        <div class="h-full rounded-full bg-blue-500 transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.5)]" :style="{ width: Math.min((familyPot / (familyGoalAmount || 1)) * 100, 100) + '%' }"></div>
+                        <div class="h-full rounded-full bg-blue-500 transition-all duration-1000" :style="{ width: Math.min((familyPot / familyGoalAmount || 1) * 100, 100) + '%' }"></div>
                     </div>
                     <div v-if="role === 'admin'" class="mt-3 text-center">
                         <button v-if="familyPot >= familyGoalAmount" @click.stop="claimSquadReward" class="bg-green-500 text-black text-[10px] font-black px-4 py-2 rounded-full uppercase animate-pulse">Claim Reward & Reset</button>
-                        <button v-else @click.stop="openGoalModal" class="text-[8px] font-black text-blue-400 underline uppercase">Instellingen Doel</button>
+                        <button v-else @click.stop="openGoalModal" class="text-[8px] font-black text-blue-400 underline uppercase">Aanpassen Doel</button>
                     </div>
                 </div>
             </section>
@@ -139,7 +140,7 @@
                             </div>
                         </div>
                         <div v-if="role === 'admin' && m.email.toLowerCase() !== user.email.toLowerCase()" class="flex gap-1">
-                            <button @click.stop="toggleAdmin(m.email, m.name)" class="bg-slate-700 px-2 py-2 rounded-lg text-[8px] fortnite-font uppercase" :class="adminEmails.includes(m.email?.toLowerCase()) ? 'text-blue-400' : 'text-slate-400'">Commander</button>
+                            <button @click.stop="toggleAdmin(m.email, m.name)" class="bg-slate-700 px-2 py-2 rounded-lg text-[8px] fortnite-font uppercase" :class="adminEmails.includes(m.email?.toLowerCase()) ? 'text-blue-400' : 'text-slate-400'">Rank</button>
                             <button @click.stop="confirmDeleteMember(m)" class="bg-rose-900/30 text-rose-500 px-2 py-2 rounded-lg text-[8px] fortnite-font">Kick</button>
                         </div>
                     </div>
@@ -159,7 +160,7 @@
                             <span class="fortnite-font text-2xl text-yellow-400">🪙 {{ selectedStats.total }}</span>
                         </div>
                     </div>
-                    <button @click="showStatsModal = false" class="w-full bg-white text-black py-4 rounded-2xl fortnite-font text-sm uppercase shadow-xl">Sluiten</button>
+                    <button @click="showStatsModal = false" class="w-full bg-white text-black py-4 rounded-2xl fortnite-font text-sm uppercase shadow-xl">Close</button>
                 </div>
             </div>
 
@@ -240,7 +241,6 @@
                     const n = now(); const d = (n.getDay() + 6) % 7;
                     if (t.type === 'once' || t.type === 'daily') return false;
                     if (t.type === 'weekly') return d !== (t.selectedDay || 0);
-                    if (t.type === 'monthly') return false;
                     return false;
                 };
 
@@ -261,7 +261,6 @@
                 const visibleTasks = computed(() => {
                     const m = user.value?.email?.toLowerCase();
                     const n = now();
-                    
                     const tasks = activeTasks.value.map(t => {
                         const task = { ...t };
                         if (task.status === 'completed' && task.lastCompletedDate) {
@@ -270,19 +269,13 @@
                             if (task.type === 'daily' && !isSameDay(n, last)) reset = true;
                             else if (task.type === 'weekly' && getWeek(n) !== getWeek(last)) reset = true;
                             else if (task.type === 'monthly' && n.getMonth() !== last.getMonth()) reset = true;
-                            
-                            if (reset) {
-                                db.collection('tasks').doc(task.id).update({ status: 'active', completedBy: null, completedByName: null });
-                                task.status = 'active'; 
-                            }
+                            if (reset) task.status = 'active'; 
                         }
                         return task;
                     }).filter(t => (role.value === 'admin' || !t.assignedTo || t.assignedTo === m));
-
                     const pending = tasks.filter(t => t.status === 'pending');
                     const active = tasks.filter(t => t.status === 'active' && !isUpcoming(t) && !isTaskExpired(t) && !isCompletedToday(t));
                     const inactive = tasks.filter(t => isCompletedToday(t) || isUpcoming(t) || isTaskExpired(t) || t.status === 'completed');
-                    
                     active.sort((a, b) => b.tokens - a.tokens);
                     return [...pending, ...active, ...inactive];
                 });
@@ -291,7 +284,7 @@
                     if (!m) return;
                     const n = now();
                     const sDay = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
-                    const sWeek = new Date(n.getFullYear(), n.getMonth(), n.getDate() - (n.getDay() + 6) % 7).getTime();
+                    const sWeek = new Date(n.getFullYear(), n.getMonth(), n.getDate() - (now().getDay() + 6) % 7).getTime();
                     const sMonth = new Date(n.getFullYear(), n.getMonth(), 1).getTime();
                     const logs = potLogs.value.filter(l => l.userName === m.name && l.type === 'MISSION');
                     selectedStats.value = {
@@ -353,7 +346,6 @@
                     rejectTask: async (t) => await db.collection('tasks').doc(t.id).update({ status: 'active', completedBy: null, completedByName: null }),
                     resetLedger: async () => { if (confirm("Wis Ledger?")) { const b = db.batch(); (await db.collection('families').doc(familyId.value).collection('potLogs').get()).forEach(d => b.delete(d.ref)); b.update(db.collection('families').doc(familyId.value), { familyPot: 0 }); await b.commit(); } },
                     cancelAndRefundGoal: async () => {
-                        if (!confirm("Refund?")) return;
                         const b = db.batch(); const start = targetStartTime.value?.toDate().getTime() || 0;
                         const logs = await db.collection('families').doc(familyId.value).collection('potLogs').where('type', '==', 'DONATION').get();
                         logs.forEach(doc => { if (doc.data().timestamp?.toDate().getTime() >= start) { const m = memberListDetails.value.find(x => x.name === doc.data().userName); if (m) b.update(db.collection('families').doc(familyId.value).collection('members').doc(m.id), { credits: firebase.firestore.FieldValue.increment(doc.data().amount) }); b.delete(doc.ref); } });
