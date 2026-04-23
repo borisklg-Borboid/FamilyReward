@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FAMILY SQUAD</title>
+    <title>SQUAD HUB</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -22,6 +22,7 @@
         .card-legendary::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent); transform: rotate(45deg); animation: shine 3s infinite; }
         @keyframes shine { 0% { margin-left: -100%; } 100% { margin-left: 100%; } }
         .card-completed { background: #1e293b !important; border-top: 4px solid #475569 !important; opacity: 0.6; filter: grayscale(1); }
+        .tab-active { background-color: #2563eb !important; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); }
         [v-cloak] { display: none; }
     </style>
 </head>
@@ -38,7 +39,7 @@
             <header class="py-6 flex justify-between items-center border-b border-white/5 mb-4">
                 <div class="flex flex-col">
                     <div class="flex items-center gap-2">
-                        <h1 class="fortnite-font text-2xl italic italic">SQUAD HUB</h1>
+                        <h1 class="fortnite-font text-2xl italic">SQUAD HUB</h1>
                         <span :class="['text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-white/5 border border-white/10', getRankColor(personalTotalEarned)]">
                             {{ getRank(personalTotalEarned) }}
                         </span>
@@ -49,10 +50,10 @@
             </header>
 
             <section class="mb-6 space-y-4">
-                <div class="bg-slate-900/80 p-6 rounded-[2rem] border border-white/5 shadow-2xl transition-all cursor-pointer active:scale-95 text-yellow-400">
+                <div class="bg-slate-900/80 p-6 rounded-[2rem] border border-white/5 shadow-2xl text-yellow-400">
                     <div class="flex justify-between items-center mb-1">
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-60">Vault Status</p>
-                        <p class="text-[9px] font-black uppercase tracking-tighter text-blue-400">Vandaag: {{ todayEarned }} / 40 🪙</p>
+                        <p class="text-[9px] font-black uppercase text-blue-400 italic">Vandaag: {{ todayEarned }} / 40 🪙</p>
                     </div>
                     <p class="fortnite-font text-5xl leading-none">{{ role === 'admin' ? totalOutstandingCredits : personalCredits }} 🪙</p>
                 </div>
@@ -63,7 +64,7 @@
                         <span class="fortnite-font">🪙 {{ familyPot }} / {{ familyGoalAmount }}</span>
                     </div>
                     <div class="w-full h-5 bg-slate-900 rounded-full border border-blue-900/30 p-1 relative">
-                        <div class="h-full rounded-full bg-blue-500 transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.5)]" :style="{ width: potPercentage + '%' }"></div>
+                        <div class="h-full rounded-full bg-blue-500 transition-all duration-1000" :style="{ width: potPercentage + '%' }"></div>
                         <span class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white uppercase italic tracking-tighter">{{ potPercentage }}% Sync</span>
                     </div>
                 </div>
@@ -72,21 +73,17 @@
             <main class="flex-1 pb-10">
                 <div class="space-y-4">
                     <div class="flex justify-between items-center px-2 mb-1 text-[10px] font-black uppercase tracking-widest text-slate-500 italic">
-                        <h3>Active Operations</h3>
-                        <p class="text-blue-400">Potential: 🪙 {{ potentialLoss }}</p>
+                        <h3>Operations</h3>
+                        <p class="text-blue-400 italic">Potential: 🪙 {{ potentialLoss }}</p>
                     </div>
 
                     <div v-for="t in visibleTasks" :key="t.id" 
                          :class="[t.rewardType === 'familiepot' ? 'card-squad' : getRarityClass(t.tokens || 0), isOnCooldown(t) ? 'card-completed' : '']" 
                          class="p-5 rounded-2xl border-t-4 flex flex-col gap-4 relative shadow-xl transition-all">
                         
-                        <div v-if="isOnCooldown(t)" class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-700 text-white fortnite-font text-[8px] px-4 py-1 rounded-full border border-white/10 uppercase italic tracking-widest z-20">
-                            ⏳ Morgen weer beschikbaar
-                        </div>
-
                         <div v-if="t.status === 'pending'" class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-yellow-400 text-black fortnite-font text-[9px] px-4 py-1 rounded-full shadow-xl border-2 border-black uppercase italic tracking-widest animate-pulse z-20 flex flex-col items-center">
-                            <span>Awaiting Verification</span>
-                            <span class="text-[7px] opacity-80 font-black italic">{{ getTimeSince(t.claimedAt) }} geleden</span>
+                            <span>Awaiting Verify</span>
+                            <span class="text-[7px] opacity-80">{{ getTimeSince(t.claimedAt) }}</span>
                         </div>
 
                         <div class="flex justify-between items-start">
@@ -100,12 +97,9 @@
                                 <div v-if="t.rewardType === 'familiepot' && t.status === 'active'" class="mt-2 flex flex-wrap gap-2">
                                     <div v-for="(c, idx) in (t.contributors || [])" :key="idx" class="flex items-center gap-1 bg-black/20 px-2 py-1 rounded-lg">
                                         <span class="text-[8px] font-black uppercase text-blue-400">{{ c.email.split('@')[0] }}</span>
-                                        <span class="text-[10px]">
-                                            {{ (() => { const type = getContributionType(t, c); return type === 'core' ? '🔥' : type === 'assist' ? '⚡' : '⚪'; })() }}
-                                        </span>
+                                        <span class="text-[10px]">{{ getContributionType(t, c) === 'core' ? '🔥' : getContributionType(t, c) === 'assist' ? '⚡' : '⚪' }}</span>
                                     </div>
                                 </div>
-                                <div v-if="isCompletedToday(t) && !isOnCooldown(t)" class="mt-1 text-[9px] font-black text-green-500 uppercase tracking-widest italic">Mission Secured</div>
                             </div>
                             <div class="bg-black/30 px-3 py-1 rounded-lg flex items-center gap-1.5 h-fit text-white">
                                 <span class="fortnite-font text-sm italic">{{ t.tokens || 0 }}</span>
@@ -117,16 +111,24 @@
                             <button @click="approveTask(t)" class="flex-1 bg-green-500 py-3 rounded-xl fortnite-font text-xs uppercase shadow-lg font-black italic">Verify</button>
                             <button @click="rejectTask(t)" class="flex-1 bg-rose-600 py-3 rounded-xl fortnite-font text-xs uppercase shadow-lg font-black italic">Deny</button>
                         </div>
+
                         <button v-else-if="role !== 'admin' && t.status === 'active' && !isOnCooldown(t)" 
                                 @click="claimTask(t)" 
                                 :disabled="(t.contributors || []).some(c => c.email === user.email.toLowerCase()) || (t.contributors || []).length >= (t.requiredContributors || 1)"
                                 class="bg-white text-black py-3 rounded-xl fortnite-font text-xs uppercase active:scale-95 shadow-xl disabled:opacity-50 font-black italic">
-                            Commit
+                            {{ (t.contributors || []).length >= (t.requiredContributors || 1) ? 'Squad Full' : (t.contributors || []).some(c => c.email === user.email.toLowerCase()) ? 'Commit Registered' : 'Join' }}
                         </button>
                     </div>
                 </div>
             </main>
         </template>
+
+        <div v-else-if="user" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+            <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p class="fortnite-font text-sm text-slate-400">Loading Squad Intel...</p>
+            <p class="text-[10px] text-slate-600 mt-2">{{ user.email }}</p>
+            <button @click="logout" class="mt-8 text-slate-500 text-[10px] font-black underline uppercase">Quit Session</button>
+        </div>
     </div>
 
     <script>
@@ -139,24 +141,79 @@
                 const user = ref(null); const familyId = ref(null); const familyName = ref(''); const role = ref('user');
                 const personalCredits = ref(0); const personalTotalEarned = ref(0); const familyPot = ref(0); 
                 const familyGoal = ref(''); const familyGoalAmount = ref(100);
-                const memberListDetails = ref([]); const adminEmails = ref([]); const activeTasks = ref([]); 
+                const memberListDetails = ref([]); const activeTasks = ref([]); 
                 const potLogs = ref([]); const tab = ref('tasks');
                 const successMsg = ref(''); const currentTime = ref(new Date());
 
                 let intervalId = null; let unsubscribers = [];
-
-                onMounted(() => {
-                    auth.onAuthStateChanged(u => { if (u) { user.value = u; checkUserAccess(u); } else { unsubscribers.forEach(unsub => unsub()); unsubscribers = []; } });
-                    intervalId = setInterval(() => { currentTime.value = new Date(); }, 10000);
-                });
-
-                onUnmounted(() => { if (intervalId) clearInterval(intervalId); unsubscribers.forEach(unsub => unsub()); });
 
                 const now = () => currentTime.value;
                 const DAY = 86400000;
                 const triggerSuccess = (msg) => { successMsg.value = msg; setTimeout(() => { successMsg.value = ''; }, 4500); };
                 const isSameDay = (d1, d2) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
 
+                const checkUserAccess = (u) => {
+                    unsubscribers.forEach(unsub => unsub());
+                    unsubscribers = [];
+
+                    const emailClean = u.email.toLowerCase().trim();
+
+                    const u1 = db.collection('families')
+                        .where('member_emails', 'array-contains', emailClean)
+                        .onSnapshot(snap => {
+                            if (snap.empty) {
+                                successMsg.value = "No Squad Found for " + emailClean;
+                                return;
+                            }
+
+                            const d = snap.docs[0];
+                            familyId.value = d.id;
+                            const data = d.data();
+
+                            familyName.value = data.familyName || 'Family Squad';
+                            familyPot.value = data.familyPot || 0;
+                            familyGoalAmount.value = data.familyGoalAmount || 100;
+
+                            const admins = (data.admin_emails || []).map(e => e.toLowerCase().trim());
+                            role.value = admins.includes(emailClean) ? 'admin' : 'user';
+
+                            // Cleanup inner listeners before restart
+                            unsubscribers.slice(1).forEach(unsub => unsub());
+                            unsubscribers = [u1];
+
+                            const u2 = db.collection('families').doc(d.id).collection('members').onSnapshot(mSnap => {
+                                memberListDetails.value = mSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                                const me = memberListDetails.value.find(m => m.email?.toLowerCase().trim() === emailClean);
+                                if (me) {
+                                    personalCredits.value = me.credits || 0;
+                                    personalTotalEarned.value = me.totalEarned || 0;
+                                }
+                            });
+
+                            const u3 = db.collection('tasks').where('familyId', '==', d.id).onSnapshot(tSnap => {
+                                activeTasks.value = tSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                            });
+
+                            const u4 = db.collection('families').doc(d.id).collection('potLogs').orderBy('timestamp', 'desc').limit(50).onSnapshot(lSnap => {
+                                potLogs.value = lSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                            });
+
+                            unsubscribers.push(u2, u3, u4);
+                        });
+                    unsubscribers.push(u1);
+                };
+
+                onMounted(() => {
+                    auth.onAuthStateChanged(u => { if (u) { user.value = u; checkUserAccess(u); } });
+                    intervalId = setInterval(() => { currentTime.value = new Date(); }, 10000);
+                });
+
+                onUnmounted(() => { 
+                    if (intervalId) clearInterval(intervalId); 
+                    unsubscribers.forEach(unsub => unsub());
+                });
+
+                // --- UI HELPERS ---
                 const getContributionType = (task, contributor) => {
                     if (!task.contributors?.length || !contributor.joinedAt) return 'late';
                     const sorted = [...task.contributors].sort((a,b) => a.joinedAt.toDate() - b.joinedAt.toDate());
@@ -176,33 +233,13 @@
                     return min < 1 ? 'zojuist' : min < 60 ? `${min} min` : `${Math.floor(min/60)} uur`;
                 };
 
+                // --- COMPUTED ---
                 const todayEarned = computed(() => { 
-                    const start = new Date(now().getTime()); start.setHours(0,0,0,0); 
+                    const start = new Date(); start.setHours(0,0,0,0);
                     return potLogs.value
                         .filter(l => l.userEmail === user.value?.email?.toLowerCase() && l.type === 'MISSION' && l.timestamp?.toDate().getTime() >= start.getTime())
-                        .reduce((sum, l) => sum + (l.amount || 0), 0); 
+                        .reduce((sum, l) => sum + (l.amount || 0), 0);
                 });
-
-                const checkUserAccess = (u) => {
-                    unsubscribers.forEach(unsub => unsub()); unsubscribers = [];
-                    const u1 = db.collection('families').where('member_emails', 'array-contains', u.email.toLowerCase()).onSnapshot(snap => {
-                        if (snap.empty) return;
-                        const d = snap.docs[0]; familyId.value = d.id; const data = d.data();
-                        familyName.value = data.familyName; familyPot.value = data.familyPot || 0; familyGoalAmount.value = data.familyGoalAmount || 100;
-                        adminEmails.value = (data.admin_emails || []).map(e => e.toLowerCase()); role.value = adminEmails.value.includes(u.email.toLowerCase()) ? 'admin' : 'user';
-                        
-                        unsubscribers.slice(1).forEach(unsub => unsub()); unsubscribers = [u1];
-                        const u2 = db.collection('families').doc(d.id).collection('members').onSnapshot(m => {
-                            memberListDetails.value = m.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            const me = memberListDetails.value.find(m => m.email?.toLowerCase() === u.email.toLowerCase());
-                            personalCredits.value = me?.credits || 0; personalTotalEarned.value = me?.totalEarned || 0;
-                        });
-                        const u3 = db.collection('tasks').where('familyId', '==', d.id).onSnapshot(t => activeTasks.value = t.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                        const u4 = db.collection('families').doc(d.id).collection('potLogs').orderBy('timestamp', 'desc').onSnapshot(l => potLogs.value = l.docs.map(doc => ({id: doc.id, ...doc.data()})));
-                        unsubscribers.push(u2, u3, u4);
-                    });
-                    unsubscribers.push(u1);
-                };
 
                 const visibleTasks = computed(() => {
                     const tasks = activeTasks.value.map(t => {
@@ -212,36 +249,37 @@
                     }).filter(t => (role.value === 'admin' || !t.assignedTo || t.assignedTo === user.value?.email?.toLowerCase()));
                     const pending = tasks.filter(t => t.status === 'pending');
                     const activeSquad = tasks.filter(t => t.rewardType === 'familiepot' && t.status === 'active');
-                    const activeSolo = tasks.filter(t => t.rewardType !== 'familiepot' && t.status === 'active' && !isSameDay(now(), t.lastCompletedDate?.toDate() || new Date(0)));
+                    const activeSolo = tasks.filter(t => t.rewardType !== 'familiepot' && t.status === 'active' && !isCompletedToday(t));
                     return role.value === 'admin' ? [...pending, ...activeSquad, ...activeSolo] : [...activeSquad, ...pending, ...activeSolo];
                 });
 
                 const potentialLoss = computed(() => {
                     const cap = Math.max(0, 40 - todayEarned.value); let xp = 0; let rem = cap;
-                    const tasks = visibleTasks.value.filter(t => t.status === 'active').sort((a,b) => (b.tokens || 0) - (a.tokens || 0));
+                    const tasks = visibleTasks.value.filter(t => t.status === 'active' && !isCompletedToday(t)).sort((a,b) => (b.tokens || 0) - (a.tokens || 0));
                     for(const t of tasks) { if(rem <= 0) break; const v = Math.min(t.tokens || 0, rem); xp += v; rem -= v; }
                     return xp;
                 });
 
+                const isCompletedToday = (t) => t.lastCompletedDate ? isSameDay(now(), t.lastCompletedDate.toDate()) : false;
+
                 return { 
-                    user, familyId, familyName, role, personalCredits, personalTotalEarned, familyPot, familyGoal, familyGoalAmount, visibleTasks, potLogs, tab, successMsg, todayEarned, potentialLoss,
+                    user, familyId, familyName, role, personalCredits, personalTotalEarned, familyPot, familyGoal, familyGoalAmount, visibleTasks, todayEarned, potentialLoss, successMsg,
                     potPercentage: computed(() => Math.min(Math.round((familyPot.value / (familyGoalAmount.value || 1)) * 100), 100)),
-                    getContributionType, getTimeSince, isOnCooldown,
+                    getContributionType, getTimeSince, isOnCooldown, isCompletedToday,
                     getRank: (t) => t >= 1500 ? 'Mythic' : t >= 700 ? 'Legend' : t >= 300 ? 'Elite' : t >= 100 ? 'Soldier' : 'Rookie',
                     getRankColor: (t) => t >= 1500 ? 'text-pink-400' : t >= 700 ? 'text-yellow-400' : t >= 300 ? 'text-purple-400' : t >= 100 ? 'text-green-400' : 'text-slate-400',
                     logout: () => auth.signOut().then(() => location.reload()),
-                    isCompletedToday: (t) => t.lastCompletedDate ? isSameDay(now(), t.lastCompletedDate.toDate()) : false,
                     
                     claimTask: async (t) => {
-                        const email = user.value.email.toLowerCase();
-                        const me = memberListDetails.value.find(x => x.email.toLowerCase() === email);
+                        const email = user.value.email.toLowerCase().trim();
+                        const me = memberListDetails.value.find(x => x.email.toLowerCase().trim() === email);
                         if (!me) return;
+                        const taskRef = db.collection('tasks').doc(t.id);
                         try {
                             await db.runTransaction(async (transaction) => {
-                                const taskRef = db.collection('tasks').doc(t.id);
                                 const doc = await transaction.get(taskRef);
                                 const data = doc.data();
-                                if (data.status !== 'active') throw "Unavailable";
+                                if (data.status !== 'active') throw "Locked";
                                 const contributors = data.contributors || [];
                                 if (contributors.some(c => c.email === email)) throw "In";
                                 if (data.rewardType === 'familiepot' && contributors.length >= (data.requiredContributors || 1)) throw "Full";
@@ -253,11 +291,10 @@
                                     claimedAt: firebase.firestore.Timestamp.now()
                                 });
                             });
-                            triggerSuccess("Success: Mission Updated");
+                            triggerSuccess("Intel Logged");
                         } catch (e) {
-                            if (e === "Full") triggerSuccess("Squad is vol");
-                            else if (e === "In") triggerSuccess("Je zit al in deze missie");
-                            else triggerSuccess("Missie niet beschikbaar");
+                            const msg = e === "Full" ? "Squad Vol!" : e === "In" ? "Al in missie" : "Missie geblokkeerd";
+                            triggerSuccess(msg);
                         }
                     },
 
@@ -292,21 +329,17 @@
                                         credits: firebase.firestore.FieldValue.increment(coins),
                                         totalEarned: firebase.firestore.FieldValue.increment(Math.round(taskData.tokens * roleMult))
                                     });
-
-                                    // CRITICAL LOGGING
                                     transaction.set(db.collection('families').doc(familyId.value).collection('potLogs').doc(), {
                                         type: 'MISSION', userEmail: c.email, amount: coins, timestamp: firebase.firestore.Timestamp.now(), description: taskData.title
                                     });
                                 }
 
                                 if (taskData.rewardType === 'familiepot') {
-                                    const efficiency = contributors.length ? (core / contributors.length) : 0;
-                                    transaction.update(familyRef, { familyPot: firebase.firestore.FieldValue.increment(Math.round(taskData.tokens * efficiency)) });
+                                    transaction.update(familyRef, { familyPot: firebase.firestore.FieldValue.increment(Math.round(taskData.tokens * (core/contributors.length))) });
                                 }
                                 transaction.update(taskRef, { status: 'completed', contributors: [], lastCompletedDate: firebase.firestore.Timestamp.now(), streak: (taskData.streak || 0) + 1 });
                             });
-                            const rating = core >= 2 ? 'STRONG TEAMPLAY' : assist > core ? 'LATE SUPPORT' : 'LOW SYNC';
-                            triggerSuccess(`🔥${core} ⚡${assist} | ${rating}`);
+                            triggerSuccess(`🔥 Core Team Boosted!`);
                         } catch (e) { console.error(e); }
                     },
                     rejectTask: async (t) => await db.collection('tasks').doc(t.id).update({ status: 'active', completedBy: null, contributors: [] }),
