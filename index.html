@@ -76,9 +76,12 @@ body { background:#0f172a; color:white; font-family:sans-serif; }
 console.log("SCRIPT START");
 
 const firebaseConfig = {
-    apiKey: "AIzaSy...",
-    authDomain: "familyreward-c4582.firebaseapp.com",
-    projectId: "familyreward-c4582"
+  apiKey: "AIzaSy...",
+  authDomain: "familyreward-c4582.firebaseapp.com",
+  projectId: "familyreward-c4582",
+  storageBucket: "familyreward-c4582.appspot.com", // 👈 FIX
+  messagingSenderId: "500697306700",
+  appId: "1:500697306700:web:e812d2b9891c4d2f64c6e9"
 };
 
 firebase.initializeApp(firebaseConfig);
