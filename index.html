@@ -371,11 +371,39 @@
                             targetStartTime.value = data.targetStartTime || null;
                             adminEmails.value = (data.admin_emails || []).map(e => e.toLowerCase());
                             role.value = adminEmails.value.includes(u.email.toLowerCase()) ? 'admin' : 'user';
+                            
                             db.collection('families').doc(familyId.value).collection('members').onSnapshot(mSnap => {
                                 memberListDetails.value = mSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                                 personalCredits.value = memberListDetails.value.find(m => m.email?.toLowerCase() === u.email.toLowerCase())?.credits || 0;
                             });
-                            db.collection('tasks').where('familyId', '==', familyId.value).onSnapshot(tSnap => activeTasks.value = tSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+                            // RECURRENCE ENGINE
+                            db.collection('tasks').where('familyId', '==', familyId.value).onSnapshot(tSnap => {
+                                const tasks = tSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                                const now = new Date();
+                                const todayDay = (now.getDay() + 6) % 7;
+                                
+                                tasks.forEach(t => {
+                                    if (t.status === 'completed' && t.lastCompletedDate) {
+                                        const last = t.lastCompletedDate.toDate();
+                                        let shouldReset = false;
+
+                                        if (t.type === 'daily') {
+                                            if (last.getDate() !== now.getDate() || last.getMonth() !== now.getMonth()) shouldReset = true;
+                                        } else if (t.type === 'weekly') {
+                                            if (todayDay === (t.selectedDay || 0) && (now.getTime() - last.getTime() > 86400000)) shouldReset = true;
+                                        } else if (t.type === 'monthly') {
+                                            if (now.getTime() - last.getTime() >= 2419200000) shouldReset = true;
+                                        }
+
+                                        if (shouldReset) {
+                                            db.collection('tasks').doc(t.id).update({ status: 'active', completedBy: null, completedByName: null });
+                                        }
+                                    }
+                                });
+                                activeTasks.value = tasks;
+                            });
+
                             db.collection('families').doc(familyId.value).collection('payday').where('status', '==', 'pending').onSnapshot(pSnap => paydayRequests.value = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
                             db.collection('families').doc(familyId.value).collection('potLogs').orderBy('timestamp', 'desc').onSnapshot(lSnap => potLogs.value = lSnap.docs.map(doc => doc.data()));
                         }
@@ -428,14 +456,14 @@
                     approveTask: async (task) => { 
                         if (task.rewardType === 'familiepot') { await db.collection('families').doc(familyId.value).update({ familyPot: firebase.firestore.FieldValue.increment(task.tokens) }); await db.collection('families').doc(familyId.value).collection('potLogs').add({ type: 'MISSION', userName: task.completedByName, description: task.title, amount: task.tokens, timestamp: new Date() }); }
                         else { const m = memberListDetails.value.find(x => x.email?.toLowerCase() === task.completedBy); if (m) await db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: firebase.firestore.FieldValue.increment(task.tokens) }); }
-                        if (task.type === 'once') await db.collection('tasks').doc(task.id).delete(); else await db.collection('tasks').doc(task.id).update({ status: 'completed', completedBy: null });
+                        if (task.type === 'once') await db.collection('tasks').doc(task.id).delete(); 
+                        else await db.collection('tasks').doc(task.id).update({ status: 'completed', completedBy: null, lastCompletedDate: new Date() });
                     },
                     deleteTask: async (id) => { if (confirm("Delete Mission?")) { await db.collection('tasks').doc(id).delete(); showCreateModal.value = false; } },
                     claimTask: async (t) => await db.collection('tasks').doc(t.id).update({ status: 'pending', completedBy: user.value.email.toLowerCase(), completedByName: user.value.displayName.split(' ')[0] }),
                     rejectTask: async (t) => await db.collection('tasks').doc(t.id).update({ status: 'active', completedBy: null, completedByName: null }),
                     confirmDonate: async () => { if (donateAmount.value <= 0 || donateAmount.value > personalCredits.value) return; if (confirm(`🎁 ${donateAmount.value} schenken?`)) { const m = memberListDetails.value.find(x => x.email?.toLowerCase() === user.value.email.toLowerCase()); await db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: firebase.firestore.FieldValue.increment(-donateAmount.value) }); await db.collection('families').doc(familyId.value).update({ familyPot: firebase.firestore.FieldValue.increment(donateAmount.value) }); await db.collection('families').doc(familyId.value).collection('potLogs').add({ type: 'DONATION', userName: m.name, description: 'SQUAD GIFT', amount: donateAmount.value, timestamp: new Date() }); showDonateModal.value = false; donateAmount.value = 0; } },
                     requestPayday: async () => { if (paydayAmount.value <= 0 || paydayAmount.value > personalCredits.value) return; await db.collection('families').doc(familyId.value).collection('payday').add({ amount: paydayAmount.value, requestedBy: user.value.email.toLowerCase(), requestedByName: user.value.displayName.split(' ')[0], status: 'pending', timestamp: new Date() }); showPaydayModal.value = false; paydayAmount.value = 0; },
-                    claimSquadReward: async () => { if (confirm("Reset pot?")) { await db.collection('families').doc(familyId.value).update({ familyPot: 0, targetStartTime: null }); const b = db.batch(); (await db.collection('families').doc(familyId.value).collection('potLogs').get()).forEach(d => b.delete(d.ref)); await b.commit(); } },
                     toggleAdmin: async (e, n) => { const mail = e.toLowerCase(); if (adminEmails.value.includes(mail)) { await db.collection('families').doc(familyId.value).update({ admin_emails: firebase.firestore.FieldValue.arrayRemove(mail) }); alert(`${n} = Recruit`); } else { await db.collection('families').doc(familyId.value).update({ admin_emails: firebase.firestore.FieldValue.arrayUnion(mail) }); alert(`${n} = Officer`); } },
                     addMember: async () => { const e = newMemberEmail.value.toLowerCase().trim(); if(!e || !newMemberName.value) return; await db.collection('families').doc(familyId.value).update({ member_emails: firebase.firestore.FieldValue.arrayUnion(e) }); await db.collection('families').doc(familyId.value).collection('members').add({ name: newMemberName.value, email: e, credits: 0, createdAt: new Date() }); newMemberName.value = ''; newMemberEmail.value = ''; },
                     editCredits: (m) => { const a = prompt(`New Gold:`, m.credits); if (a) db.collection('families').doc(familyId.value).collection('members').doc(m.id).update({ credits: parseInt(a) }); },
