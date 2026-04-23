@@ -11,32 +11,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --common: #b1b1b1; 
-            --uncommon: #43c034; 
-            --epic: #b233f0; 
-            --legendary: #f0ad1d; 
-        }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #0f172a; 
-            color: white; 
-            min-height: 100vh; 
-            overflow-x: hidden; 
-        }
-        .fortnite-font { 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            letter-spacing: -0.01em; 
-        }
-        
+        :root { --common: #b1b1b1; --uncommon: #43c034; --epic: #b233f0; --legendary: #f0ad1d; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; min-height: 100vh; overflow-x: hidden; }
+        .fortnite-font { font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; }
         .card-common { background: linear-gradient(135deg, #374151 0%, #111827 100%); border-top: 4px solid var(--common); }
         .card-uncommon { background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); border-top: 4px solid var(--uncommon); }
         .card-epic { background: linear-gradient(135deg, #581c87 0%, #2e1065 100%); border-top: 4px solid var(--epic); }
-        
         .card-legendary { 
-            background: linear-gradient(135deg, #78350f 0%, #451a03 100%); 
-            border-top: 4px solid var(--legendary); 
+            background: linear-gradient(135deg, #78350f 0%, #451a03 100%); border-top: 4px solid var(--legendary); 
             position: relative; overflow: hidden; box-shadow: 0 0 20px rgba(240, 173, 29, 0.4);
         }
         .card-legendary::after {
@@ -45,7 +27,6 @@
             transform: rotate(45deg); animation: shine 3s infinite;
         }
         @keyframes shine { 0% { margin-left: -100%; } 100% { margin-left: 100%; } }
-
         .card-completed, .card-expired, .card-upcoming { background: #1e293b !important; border-top: 4px solid #475569 !important; opacity: 0.6; filter: grayscale(1); }
         .tab-active { background-color: #2563eb !important; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); }
         [v-cloak] { display: none; }
@@ -78,7 +59,7 @@
                      :class="role !== 'admin' ? 'cursor-pointer active:scale-95' : ''">
                     <div class="flex justify-between items-start mb-2">
                         <p class="fortnite-font text-[10px] text-yellow-400 tracking-widest">{{ role === 'admin' ? 'Total Squad Credits' : 'Mijn Goudvoorraad' }}</p>
-                        <p v-if="role !== 'admin'" class="text-[8px] font-black text-yellow-400/40 uppercase italic">Tik voor acties & stats</p>
+                        <p v-if="role !== 'admin'" class="text-[8px] font-black text-yellow-400/40 uppercase italic tracking-tighter">Stats & Acties</p>
                     </div>
                     <p class="fortnite-font text-5xl text-yellow-400 leading-none">{{ role === 'admin' ? totalOutstandingCredits : personalCredits }} 🪙</p>
                 </div>
@@ -89,11 +70,11 @@
                         <span class="fortnite-font text-[10px]">🪙 {{ familyPot }} / {{ familyGoalAmount }}</span>
                     </div>
                     <div class="w-full h-4 bg-slate-900 rounded-full overflow-hidden border border-blue-900/30 p-1">
-                        <div class="h-full rounded-full bg-blue-500 transition-all duration-1000" :style="{ width: Math.min((familyPot / (familyGoalAmount || 1)) * 100, 100) + '%' }"></div>
+                        <div class="h-full rounded-full bg-blue-500 transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.5)]" :style="{ width: Math.min((familyPot / (familyGoalAmount || 1)) * 100, 100) + '%' }"></div>
                     </div>
                     <div v-if="role === 'admin'" class="mt-3 text-center">
-                        <button v-if="familyPot >= familyGoalAmount" @click.stop="claimSquadReward" class="bg-green-500 text-black text-[10px] font-black px-4 py-2 rounded-full uppercase animate-pulse">Goal Reached & Reset</button>
-                        <button v-else @click.stop="openGoalModal" class="text-[8px] font-black text-blue-400 underline uppercase">Aanpassen Doel</button>
+                        <button v-if="familyPot >= familyGoalAmount" @click.stop="claimSquadReward" class="bg-green-500 text-black text-[10px] font-black px-4 py-2 rounded-full uppercase animate-pulse">Claim Reward & Reset</button>
+                        <button v-else @click.stop="openGoalModal" class="text-[8px] font-black text-blue-400 underline uppercase">Instellingen Doel</button>
                     </div>
                 </div>
             </section>
@@ -106,7 +87,7 @@
             <main class="flex-1 pb-10">
                 <div v-if="tab === 'tasks'" class="space-y-4">
                     <div v-if="role === 'admin' && paydayRequests.length" class="space-y-2 mb-6">
-                        <h3 class="fortnite-font text-[10px] text-rose-500 px-2 animate-pulse italic uppercase">Payday Alerts</h3>
+                        <h3 class="fortnite-font text-[10px] text-rose-500 px-2 animate-pulse italic uppercase tracking-widest">Payday Alerts</h3>
                         <div v-for="req in paydayRequests" :key="req.id" class="bg-rose-500/10 border border-rose-500/30 p-4 rounded-2xl flex justify-between items-center">
                             <div class="flex-1"><p class="text-xl font-black italic">🪙 {{ req.amount }} - {{ req.requestedByName }}</p></div>
                             <button @click="approvePayday(req)" class="bg-white text-black px-4 py-2 rounded-xl fortnite-font text-[10px]">PAID</button>
@@ -116,8 +97,8 @@
                     <button v-if="role === 'admin'" @click="openCreateModal" class="w-full bg-white text-black py-4 rounded-2xl fortnite-font text-sm mb-6 shadow-xl active:scale-95 transition-all">+ NEW MISSION</button>
                     
                     <div v-for="t in visibleTasks" :key="t.id" 
-                         :class="[getRarityClass(t.tokens), t.status === 'completed' ? 'card-completed' : '', (isTaskExpired(t) && t.status === 'active') ? 'card-expired' : '', isUpcoming(t) ? 'card-upcoming' : '']" 
-                         class="p-5 rounded-2xl border-t-4 flex flex-col gap-4 relative shadow-xl">
+                         :class="[getRarityClass(t.tokens), isCompletedToday(t) ? 'card-completed' : '', (isTaskExpired(t) && t.status === 'active') ? 'card-expired' : '', isUpcoming(t) ? 'card-upcoming' : '']" 
+                         class="p-5 rounded-2xl border-t-4 flex flex-col gap-4 relative shadow-xl transition-all">
                         
                         <div v-if="isUpcoming(t)" class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-700 text-white fortnite-font text-[8px] px-3 py-1 rounded-full shadow-xl border border-white/20 whitespace-nowrap z-10">COMING SOON: {{ daysShort[t.selectedDay || 0] }}</div>
                         <div v-if="role === 'admin' && t.status === 'pending'" class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-black fortnite-font text-[9px] px-4 py-1 rounded-full shadow-xl animate-bounce border-2 border-black whitespace-nowrap z-10 uppercase">CLAIM DOOR {{ t.completedByName }} - APPROVE NOW</div>
@@ -126,12 +107,12 @@
                             <div @click="role === 'admin' ? openEditModal(t) : null" :class="role === 'admin' ? 'cursor-pointer' : ''" class="flex-1">
                                 <span class="text-[9px] font-black uppercase opacity-60 mb-1 block tracking-widest">{{ getRarityName(t.tokens) }} • {{ t.type }} <span v-if="t.assignedToName" class="text-blue-400"> • {{ t.assignedToName }}</span></span>
                                 <h3 class="fortnite-font text-lg leading-tight">{{ t.title }}</h3>
-                                <div v-if="t.status === 'active' && t.deadlineTime && !isUpcoming(t)" class="mt-2 flex items-center gap-1.5">
+                                <div v-if="!isCompletedToday(t) && t.status === 'active' && t.deadlineTime && !isUpcoming(t)" class="mt-2 flex items-center gap-1.5">
                                     <span class="text-[10px] font-black font-mono tracking-tighter" :class="getTimeInfo(t).urgent ? 'text-rose-500' : 'text-slate-300'">
                                         {{ getTimeInfo(t).expired ? 'FAILED' : 'TIME: ' + getTimeInfo(t).formatted }}
                                     </span>
                                 </div>
-                                <div v-if="t.status === 'completed'" class="mt-1 text-[9px] font-black text-green-500 uppercase tracking-widest">Mission Accomplished</div>
+                                <div v-if="isCompletedToday(t)" class="mt-1 text-[9px] font-black text-green-500 uppercase tracking-widest">Mission Accomplished</div>
                                 <div v-if="t.status === 'pending' && role !== 'admin'" class="mt-1 text-[9px] font-black text-blue-400 uppercase italic">Secured - Under Review</div>
                             </div>
                             <div class="bg-black/30 px-3 py-1 rounded-lg flex items-center gap-1.5 h-fit">
@@ -144,21 +125,21 @@
                             <button @click="approveTask(t)" class="flex-1 bg-green-500 py-3 rounded-xl fortnite-font text-xs uppercase shadow-lg">Approve</button>
                             <button @click="rejectTask(t)" class="flex-1 bg-rose-600 py-3 rounded-xl fortnite-font text-xs uppercase shadow-lg">Deny</button>
                         </div>
-                        <button v-else-if="role !== 'admin' && t.status === 'active' && !isTaskExpired(t) && !isUpcoming(t)" @click="claimTask(t)" class="bg-white text-black py-3 rounded-xl fortnite-font text-xs uppercase italic active:scale-95 shadow-xl">Complete Mission</button>
+                        <button v-else-if="role !== 'admin' && t.status === 'active' && !isTaskExpired(t) && !isUpcoming(t) && !isCompletedToday(t)" @click="claimTask(t)" class="bg-white text-black py-3 rounded-xl fortnite-font text-xs uppercase italic active:scale-95 shadow-xl">Complete Mission</button>
                     </div>
                 </div>
 
                 <div v-if="tab === 'members'" class="space-y-6">
                     <div v-for="m in memberListDetails" :key="m.email" @click="viewMemberStats(m)" class="bg-slate-800/60 p-4 rounded-3xl border border-slate-700/50 flex justify-between items-center mb-3 cursor-pointer active:scale-95 transition-all">
                         <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-slate-700 text-blue-400">{{ m.name?.charAt(0) }}</div>
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-slate-700 text-blue-400 border border-blue-500/20">{{ m.name?.charAt(0) }}</div>
                             <div>
                                 <p class="fortnite-font text-sm italic">{{ m.name }}</p>
                                 <div class="flex gap-2 items-center"><span class="text-[8px] font-black text-yellow-400 uppercase tracking-widest">🪙 {{ m.credits || 0 }} Gold</span><span v-if="adminEmails.includes(m.email?.toLowerCase())" class="text-[8px] font-black text-blue-400 uppercase bg-blue-400/10 px-1 rounded">Officer</span></div>
                             </div>
                         </div>
                         <div v-if="role === 'admin' && m.email.toLowerCase() !== user.email.toLowerCase()" class="flex gap-1">
-                            <button @click.stop="toggleAdmin(m.email, m.name)" class="bg-slate-700 px-2 py-2 rounded-lg text-[8px] fortnite-font uppercase" :class="adminEmails.includes(m.email?.toLowerCase()) ? 'text-blue-400' : 'text-slate-400'">Rank</button>
+                            <button @click.stop="toggleAdmin(m.email, m.name)" class="bg-slate-700 px-2 py-2 rounded-lg text-[8px] fortnite-font uppercase" :class="adminEmails.includes(m.email?.toLowerCase()) ? 'text-blue-400' : 'text-slate-400'">Commander</button>
                             <button @click.stop="confirmDeleteMember(m)" class="bg-rose-900/30 text-rose-500 px-2 py-2 rounded-lg text-[8px] fortnite-font">Kick</button>
                         </div>
                     </div>
@@ -168,10 +149,7 @@
             <div v-if="showStatsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-black/95 backdrop-blur-xl" @click="showStatsModal = false"></div>
                 <div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-8 relative border border-white/10 shadow-2xl">
-                    <div class="text-center mb-6">
-                        <h3 class="fortnite-font text-2xl text-blue-400 italic leading-none">PLAYER INTEL</h3>
-                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{{ selectedStats.name }}</p>
-                    </div>
+                    <div class="text-center mb-6"><h3 class="fortnite-font text-2xl text-blue-400 italic leading-none">PLAYER INTEL</h3><p class="text-[10px] font-black text-slate-500 uppercase mt-1">{{ selectedStats.name }}</p></div>
                     <div class="space-y-3 mb-8">
                         <div class="flex justify-between bg-slate-800/40 p-4 rounded-2xl border border-white/5"><span class="text-[10px] font-black text-slate-400 uppercase">Today</span><span class="fortnite-font text-yellow-400">🪙 {{ selectedStats.today }}</span></div>
                         <div class="flex justify-between bg-slate-800/40 p-4 rounded-2xl border border-white/5"><span class="text-[10px] font-black text-slate-400 uppercase">This Week</span><span class="fortnite-font text-yellow-400">🪙 {{ selectedStats.week }}</span></div>
@@ -181,7 +159,7 @@
                             <span class="fortnite-font text-2xl text-yellow-400">🪙 {{ selectedStats.total }}</span>
                         </div>
                     </div>
-                    <button @click="showStatsModal = false" class="w-full bg-white text-black py-4 rounded-2xl fortnite-font text-sm uppercase">Sluiten</button>
+                    <button @click="showStatsModal = false" class="w-full bg-white text-black py-4 rounded-2xl fortnite-font text-sm uppercase shadow-xl">Sluiten</button>
                 </div>
             </div>
 
@@ -190,8 +168,8 @@
                 <div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-8 relative border border-blue-500/30 text-center shadow-2xl">
                     <h3 class="fortnite-font text-xl mb-2 text-blue-400 uppercase">Squad Target</h3>
                     <div class="space-y-4 my-6 text-left">
-                        <input v-model="newGoalName" :disabled="familyPot > 0" placeholder="Beloning" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none border border-white/5">
-                        <input v-model.number="newGoalAmount" :disabled="familyPot > 0" type="number" placeholder="Prijs" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none border border-white/5">
+                        <input v-model="newGoalName" :disabled="familyPot > 0" placeholder="Beloning" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white border border-white/5">
+                        <input v-model.number="newGoalAmount" :disabled="familyPot > 0" type="number" placeholder="Prijs" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white border border-white/5">
                     </div>
                     <div v-if="familyPot === 0"><button @click="saveGoal" class="w-full bg-blue-600 text-white py-4 rounded-xl fortnite-font uppercase">Confirm</button></div>
                     <div v-else class="space-y-3"><button @click="cancelAndRefundGoal" class="w-full bg-rose-600 text-white py-4 rounded-xl fortnite-font uppercase">Annuleren & Refund</button></div>
@@ -212,9 +190,8 @@
             </div>
 
             <div v-if="showDonateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/95 backdrop-blur-xl" @click="showDonateModal = false"></div><div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-8 relative border border-blue-500/30 text-center shadow-2xl"><h3 class="fortnite-font text-xl mb-2 text-blue-400 uppercase italic">Donate Goud</h3><input v-model.number="donateAmount" type="number" class="w-full p-4 bg-slate-800 rounded-2xl font-black text-white text-center text-3xl mb-6 outline-none border border-white/5"><button @click="confirmDonate" class="w-full bg-blue-600 text-white py-4 rounded-xl fortnite-font uppercase">Schenken</button></div></div>
-            <div v-if="showPaydayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/95 backdrop-blur-xl" @click="showPaydayModal = false"></div><div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-8 relative border border-green-500/30 text-center shadow-2xl"><h3 class="fortnite-font text-xl mb-6 text-green-500 uppercase italic">Payday Request</h3><div class="flex gap-2 mb-6"><button @click="paydayAmount = personalCredits" class="flex-1 bg-slate-800 p-4 rounded-xl text-[10px] font-black uppercase">Max</button><input v-model.number="paydayAmount" type="number" class="flex-[2] p-4 bg-slate-800 rounded-xl font-black text-white text-center text-2xl outline-none"></div><button @click="requestPayday" class="w-full bg-green-500 text-black py-4 rounded-xl fortnite-font shadow-lg uppercase">Verzoek</button></div></div>
-            <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/95 backdrop-blur-xl" @click="showCreateModal = false"></div><div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-6 relative border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh]"><h3 class="fortnite-font text-xl mb-6 italic text-center text-blue-400 uppercase italic">{{ isEditing ? 'Edit Mission' : 'New Mission' }}</h3><div class="space-y-4"><input v-model="newTask.title" placeholder="Naam" class="w-full p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none"><div><label class="text-[9px] font-black text-blue-400 uppercase ml-2 block">Target</label><select v-model="newTask.assignedTo" class="w-full p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none"><option value="">Iedereen</option><option v-for="m in squadOnly" :key="m.email" :value="m.email?.toLowerCase()">{{ m.name }}</option></select></div><div class="flex gap-2"><input v-model.number="newTask.tokens" type="number" placeholder="Gold" class="flex-1 p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none"><select v-model="newTask.type" class="flex-1 p-4 bg-slate-800 rounded-xl text-[11px] font-bold text-white outline-none"><option value="once">Once</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div><div v-if="newTask.type === 'daily'"><input v-model="newTask.deadlineTime" type="time" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none"></div><div v-if="newTask.type === 'weekly' || newTask.type === 'monthly'" class="grid grid-cols-4 gap-2"><button v-for="(day, idx) in daysShort" :key="idx" @click="newTask.selectedDay = idx" :class="newTask.selectedDay === idx ? 'bg-blue-600' : 'bg-slate-700 opacity-40'" class="py-2 rounded-lg text-[9px] font-black uppercase">{{ day }}</button></div><div class="flex gap-2 pt-4"><button v-if="isEditing" @click="deleteTask(newTask.id)" class="flex-1 bg-rose-900/50 text-rose-500 py-4 rounded-xl fortnite-font text-xs uppercase">Delete</button><button @click="saveTask" class="flex-[2] bg-blue-600 text-white py-4 rounded-xl fortnite-font text-sm uppercase">Deploy</button></div></div></div></div>
-
+            <div v-if="showPaydayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/95 backdrop-blur-xl" @click="showPaydayModal = false"></div><div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-8 relative border border-green-500/30 text-center shadow-2xl"><h3 class="fortnite-font text-xl mb-6 text-green-500 uppercase italic">Payday Request</h3><div class="flex gap-2 mb-6"><button @click="paydayAmount = personalCredits" class="flex-1 bg-slate-800 p-4 rounded-xl text-[10px] font-black uppercase border border-white/5">Max</button><input v-model.number="paydayAmount" type="number" class="flex-[2] p-4 bg-slate-800 rounded-xl font-black text-white text-center text-2xl outline-none"></div><button @click="requestPayday" class="w-full bg-green-500 text-black py-4 rounded-xl fortnite-font shadow-lg uppercase">Verzoek</button></div></div>
+            <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/95 backdrop-blur-xl" @click="showCreateModal = false"></div><div class="bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-6 relative border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh]"><h3 class="fortnite-font text-xl mb-6 italic text-center text-blue-400 uppercase italic">{{ isEditing ? 'Edit Mission' : 'New Mission' }}</h3><div class="space-y-4"><input v-model="newTask.title" placeholder="Naam" class="w-full p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none"><div><label class="text-[9px] font-black text-blue-400 uppercase ml-2 block">Target</label><select v-model="newTask.assignedTo" class="w-full p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none"><option value="">Iedereen</option><option v-for="m in squadOnly" :key="m.email" :value="m.email?.toLowerCase()">{{ m.name }}</option></select></div><div class="flex gap-2"><input v-model.number="newTask.tokens" type="number" placeholder="Gold" class="flex-1 p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none"><select v-model="newTask.type" class="flex-1 p-4 bg-slate-800 rounded-xl text-[11px] font-bold text-white outline-none"><option value="once">Once</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div><div v-if="newTask.type === 'daily'"><input v-model="newTask.deadlineTime" type="time" class="w-full p-4 bg-slate-800 rounded-xl font-bold text-white outline-none"></div><div v-if="newTask.type === 'weekly' || newTask.type === 'monthly'" class="grid grid-cols-4 gap-2"><button v-for="(day, idx) in daysShort" :key="idx" @click="newTask.selectedDay = idx" :class="newTask.selectedDay === idx ? 'bg-blue-600' : 'bg-slate-700 opacity-40'" class="py-2 rounded-lg text-[9px] font-black uppercase">{{ day }}</button></div><select v-model="newTask.rewardType" class="w-full p-4 bg-slate-800 rounded-xl text-sm font-bold text-white outline-none border border-white/5"><option value="persoonlijk">Personal Gold</option><option value="familiepot">Squad Pot</option></select><div class="flex gap-2 pt-4"><button v-if="isEditing" @click="deleteTask(newTask.id)" class="flex-1 bg-rose-900/50 text-rose-500 py-4 rounded-xl fortnite-font text-xs uppercase">Delete</button><button @click="saveTask" class="flex-[2] bg-blue-600 text-white py-4 rounded-xl fortnite-font text-sm uppercase">Deploy</button></div></div></div></div>
         </template>
     </div>
 
@@ -223,7 +200,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(); const auth = firebase.auth(); const { createApp, ref, computed, onMounted } = Vue;
 
-        db.enablePersistence().catch(err => console.error("Offline failed", err));
+        db.enablePersistence().catch(err => console.error("Offline persistence failed", err));
 
         createApp({
             setup() {
@@ -240,53 +217,82 @@
                 const selectedStats = ref({ name: '', today: 0, week: 0, month: 0, total: 0, since: '', email: '' });
 
                 setInterval(() => { currentTime.value = new Date(); }, 1000);
-                const squadOnly = computed(() => memberListDetails.value.filter(m => !adminEmails.value.includes(m.email?.toLowerCase())));
-                const totalOutstandingCredits = computed(() => memberListDetails.value.filter(m => !adminEmails.value.includes(m.email?.toLowerCase())).reduce((sum, m) => sum + (m.credits || 0), 0));
-
-                const isUpcoming = (t) => {
-                    const now = new Date(); const d = (now.getDay() + 6) % 7;
-                    if (t.type === 'once' || t.type === 'daily') return false;
-                    const taskDate = (t.nextAvailable && t.nextAvailable.toDate) ? t.nextAvailable.toDate() : null;
-                    if (t.type === 'weekly') return d !== (t.selectedDay || 0);
-                    if (t.type === 'monthly') return !taskDate ? d !== (t.selectedDay || 0) : (now < taskDate || d !== (t.selectedDay || 0));
-                    return false;
+                
+                const now = () => currentTime.value;
+                const isSameDay = (d1, d2) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+                
+                const getWeek = (d) => {
+                    const date = new Date(d.getTime()); date.setHours(0,0,0,0);
+                    date.setDate(date.getDate() + 4 - (date.getDay()||7));
+                    const yearStart = new Date(date.getFullYear(),0,1);
+                    return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
                 };
 
-                const visibleTasks = computed(() => {
-                    const m = user.value?.email?.toLowerCase();
-                    const tasks = activeTasks.value.filter(t => (role.value === 'admin' || !t.assignedTo || t.assignedTo === m));
-                    const pending = tasks.filter(t => t.status === 'pending');
-                    const active = tasks.filter(t => t.status === 'active' && !isUpcoming(t) && !isTaskExpired(t));
-                    const inactive = tasks.filter(t => (t.status === 'completed' || isUpcoming(t) || isTaskExpired(t)));
-                    active.sort((a, b) => b.tokens - a.tokens);
-                    return [...pending, ...active, ...inactive];
-                });
+                const isCompletedToday = (t) => {
+                    if (!t.lastCompletedDate) return false;
+                    return isSameDay(now(), t.lastCompletedDate.toDate());
+                };
 
-                const getTimeInfo = (t) => {
-                    if (!t.deadlineTime) return { formatted: '', expired: false, urgent: false };
-                    const [h, m] = t.deadlineTime.split(':');
-                    const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0, 0);
-                    const diff = target - currentTime.value;
-                    if (diff <= 0) return { formatted: '0:0:0:0', expired: true, urgent: true };
-                    const hrs = Math.floor(diff / 3600000);
-                    const mins = Math.floor((diff % 3600000) / 60000);
-                    const secs = Math.floor((diff % 60000) / 1000);
-                    return { formatted: `${hrs}:${mins}:${secs}`, expired: false, urgent: diff < 3600000 };
+                const squadOnly = computed(() => memberListDetails.value.filter(m => !adminEmails.value.includes(m.email?.toLowerCase())));
+                const totalOutstandingCredits = computed(() => squadOnly.value.reduce((sum, m) => sum + (m.credits || 0), 0));
+
+                const isUpcoming = (t) => {
+                    const n = now(); const d = (n.getDay() + 6) % 7;
+                    if (t.type === 'once' || t.type === 'daily') return false;
+                    if (t.type === 'weekly') return d !== (t.selectedDay || 0);
+                    if (t.type === 'monthly') return false;
+                    return false;
                 };
 
                 const isTaskExpired = (t) => {
                     if (!t.deadlineTime || t.status !== 'active' || isUpcoming(t)) return false;
-                    const [h, m] = t.deadlineTime.split(':');
-                    const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0, 0);
-                    return currentTime.value > target;
+                    const [h, m] = t.deadlineTime.split(':'); const target = new Date(now()); target.setHours(parseInt(h), parseInt(m), 0, 0);
+                    return now() > target;
                 };
+
+                const getTimeInfo = (t) => {
+                    if (!t.deadlineTime) return { formatted: '', expired: false, urgent: false };
+                    const [h, m] = t.deadlineTime.split(':'); const target = new Date(now()); target.setHours(parseInt(h), parseInt(m), 0, 0);
+                    const diff = target - now(); if (diff <= 0) return { formatted: '0:0', expired: true, urgent: true };
+                    const hrs = Math.floor(diff/3600000), mins = Math.floor((diff%3600000)/60000);
+                    return { formatted: `${hrs}:${mins}`, expired: false, urgent: diff < 3600000 };
+                };
+
+                const visibleTasks = computed(() => {
+                    const m = user.value?.email?.toLowerCase();
+                    const n = now();
+                    
+                    const tasks = activeTasks.value.map(t => {
+                        const task = { ...t };
+                        if (task.status === 'completed' && task.lastCompletedDate) {
+                            const last = task.lastCompletedDate.toDate();
+                            let reset = false;
+                            if (task.type === 'daily' && !isSameDay(n, last)) reset = true;
+                            else if (task.type === 'weekly' && getWeek(n) !== getWeek(last)) reset = true;
+                            else if (task.type === 'monthly' && n.getMonth() !== last.getMonth()) reset = true;
+                            
+                            if (reset) {
+                                db.collection('tasks').doc(task.id).update({ status: 'active', completedBy: null, completedByName: null });
+                                task.status = 'active'; 
+                            }
+                        }
+                        return task;
+                    }).filter(t => (role.value === 'admin' || !t.assignedTo || t.assignedTo === m));
+
+                    const pending = tasks.filter(t => t.status === 'pending');
+                    const active = tasks.filter(t => t.status === 'active' && !isUpcoming(t) && !isTaskExpired(t) && !isCompletedToday(t));
+                    const inactive = tasks.filter(t => isCompletedToday(t) || isUpcoming(t) || isTaskExpired(t) || t.status === 'completed');
+                    
+                    active.sort((a, b) => b.tokens - a.tokens);
+                    return [...pending, ...active, ...inactive];
+                });
 
                 const viewMemberStats = (m) => {
                     if (!m) return;
-                    const now = new Date();
-                    const sDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-                    const sWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7).getTime();
-                    const sMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+                    const n = now();
+                    const sDay = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+                    const sWeek = new Date(n.getFullYear(), n.getMonth(), n.getDate() - (n.getDay() + 6) % 7).getTime();
+                    const sMonth = new Date(n.getFullYear(), n.getMonth(), 1).getTime();
                     const logs = potLogs.value.filter(l => l.userName === m.name && l.type === 'MISSION');
                     selectedStats.value = {
                         name: m.name, email: m.email?.toLowerCase() || '',
@@ -312,29 +318,11 @@
                                 memberListDetails.value = mSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                                 personalCredits.value = memberListDetails.value.find(m => m.email?.toLowerCase() === u.email.toLowerCase())?.credits || 0;
                             });
-
                             db.collection('tasks').where('familyId', '==', familyId.value).onSnapshot(tSnap => {
-                                const now = new Date();
-                                const todayStr = now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate();
-                                const todayDay = (now.getDay() + 6) % 7;
-                                const tasks = tSnap.docs.map(doc => {
-                                    const t = { id: doc.id, ...doc.data() };
-                                    if (t.status === 'completed' && t.lastCompletedDate) {
-                                        const last = t.lastCompletedDate.toDate();
-                                        const lastStr = last.getFullYear() + "-" + (last.getMonth() + 1) + "-" + last.getDate();
-                                        let reset = false;
-                                        if (t.type === 'daily' && todayStr !== lastStr) reset = true;
-                                        else if (t.type === 'weekly' && todayDay === (t.selectedDay || 0) && todayStr !== lastStr) reset = true;
-                                        else if (t.type === 'monthly' && (now.getTime() - last.getTime() >= 2419200000)) reset = true;
-                                        if (reset && t.status === 'completed') db.collection('tasks').doc(t.id).update({ status: 'active', completedBy: null, completedByName: null });
-                                    }
-                                    return t;
-                                });
-                                activeTasks.value = tasks;
+                                activeTasks.value = tSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                             });
-
                             db.collection('families').doc(familyId.value).collection('payday').where('status', '==', 'pending').onSnapshot(pSnap => paydayRequests.value = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                            db.collection('families').doc(familyId.value).collection('potLogs').orderBy('timestamp', 'desc').onSnapshot(lSnap => potLogs.value = lSnap.docs.map(doc => ({id: doc.id, ...doc.data()})));
+                            db.collection('families').doc(familyId.value).collection('potLogs').orderBy('timestamp', 'desc').onSnapshot(lSnap => potLogs.value = lSnap.docs.map(doc => doc.data()));
                         }
                     });
                 };
@@ -342,14 +330,14 @@
                 onMounted(() => auth.onAuthStateChanged(u => { if (u) { user.value = u; checkUserAccess(u); } }));
 
                 return { 
-                    user, familyId, familyName, role, personalCredits, familyPot, familyGoal, familyGoalAmount, totalOutstandingCredits, memberListDetails, adminEmails, visibleTasks, potLogs, paydayRequests, tab, daysShort, showCreateModal, isEditing, showGoalModal, showPotLogs, showPaydayModal, showDonateModal, showBalanceActionModal, showStatsModal, newTask, donateAmount, paydayAmount, squadOnly, newGoalName, newGoalAmount, selectedStats, viewMemberStats, getTimeInfo, isTaskExpired, isUpcoming,
+                    user, familyId, familyName, role, personalCredits, familyPot, familyGoal, familyGoalAmount, totalOutstandingCredits, memberListDetails, adminEmails, visibleTasks, potLogs, paydayRequests, tab, daysShort, showCreateModal, isEditing, showGoalModal, showPotLogs, showPaydayModal, showDonateModal, showBalanceActionModal, showStatsModal, newTask, donateAmount, paydayAmount, squadOnly, newGoalName, newGoalAmount, selectedStats, viewMemberStats, getTimeInfo, isTaskExpired, isUpcoming, isCompletedToday,
                     login: () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()),
                     logout: () => auth.signOut().then(() => location.reload()),
                     openCreateModal: () => { isEditing.value = false; newTask.value = { title: '', tokens: 10, type: 'once', rewardType: 'persoonlijk', selectedDay: 0, deadlineTime: '', assignedTo: '' }; showCreateModal.value = true; },
                     openEditModal: (t) => { isEditing.value = true; newTask.value = { ...t }; showCreateModal.value = true; },
                     openGoalModal: () => { newGoalName.value = familyGoal.value; newGoalAmount.value = familyGoalAmount.value; showGoalModal.value = true; },
                     saveGoal: async () => { await db.collection('families').doc(familyId.value).update({ familyGoal: newGoalName.value, familyGoalAmount: newGoalAmount.value, targetStartTime: new Date() }); showGoalModal.value = false; },
-                    saveTask: async () => { if (!newTask.value.title) return; let data = { ...newTask.value, familyId: familyId.value }; if (data.assignedTo) data.assignedToName = memberListDetails.value.find(m => m.email?.toLowerCase() === data.assignedTo)?.name || ''; if (isEditing.value) await db.collection('tasks').doc(newTask.value.id).update(data); else await db.collection('tasks').add({ ...data, status: 'active', createdAt: new Date() }); showCreateModal.value = true; showCreateModal.value = false; },
+                    saveTask: async () => { if (!newTask.value.title) return; let data = { ...newTask.value, familyId: familyId.value }; if (data.assignedTo) data.assignedToName = memberListDetails.value.find(m => m.email?.toLowerCase() === data.assignedTo)?.name || ''; if (isEditing.value) await db.collection('tasks').doc(newTask.value.id).update(data); else await db.collection('tasks').add({ ...data, status: 'active', createdAt: new Date() }); showCreateModal.value = false; },
                     approveTask: async (task) => { 
                         const m = memberListDetails.value.find(x => x.email?.toLowerCase() === task.completedBy); 
                         if (m) {
