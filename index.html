@@ -1,302 +1,245 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SQUAD HUB SAFE</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
-<style>
-body { background:#0f172a; color:white; font-family:sans-serif; }
-.card { background:#1e293b; padding:16px; border-radius:16px; margin-bottom:12px; }
-[v-cloak]{display:none;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQUAD HUB SAFE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        body { background:#0f172a; color:white; font-family:sans-serif; }
+        .card { background:#1e293b; padding:16px; border-radius:16px; margin-bottom:12px; border: 1px solid rgba(255,255,255,0.05); }
+        [v-cloak] { display:none; }
+    </style>
 </head>
-
 <body>
-
 <div id="app" v-cloak class="max-w-md mx-auto p-4">
 
-<!-- LOGIN -->
-<div v-if="!user" class="text-center mt-20">
-    <button @click="login" class="bg-white text-black px-6 py-3 rounded-xl">
-        Login met Google
-    </button>
-</div>
-
-<!-- APP -->
-<div v-if="user && familyId">
-
-    <h1 class="text-xl mb-4">SQUAD HUB</h1>
-
-    <div class="card">
-        <p>Credits</p>
-        <h2 class="text-3xl">{{ credits }} 🪙</h2>
+    <div v-if="!user" class="text-center mt-20">
+        <h1 class="text-2xl font-bold mb-8">SQUAD HUB</h1>
+        <button @click="login" class="bg-white text-black px-8 py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-transform">
+            Login met Google
+        </button>
+        <p class="text-slate-500 text-xs mt-4">Zorg dat pop-ups zijn toegestaan</p>
     </div>
 
-    <div class="grid grid-cols-2 gap-2 mb-4">
-        <button @click="boost" class="bg-blue-500 p-3 rounded-xl">Boost</button>
-        <button @click="cashout" class="bg-yellow-500 p-3 rounded-xl">Cashout</button>
-    </div>
+    <div v-if="user && familyId">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-xl font-bold italic">SQUAD HUB</h1>
+            <button @click="logout" class="text-slate-500 text-xs uppercase">Logout</button>
+        </div>
 
-    <div class="card">
-        <p>Family Pot</p>
-        <h2 class="text-2xl">{{ familyPot }} 🪙</h2>
-    </div>
+        <div class="card bg-slate-900 border-yellow-500/20">
+            <p class="text-xs text-slate-400 uppercase font-bold mb-1">Persoonlijk Saldo</p>
+            <h2 class="text-4xl font-black text-yellow-400">{{ credits }} 🪙</h2>
+        </div>
 
-    <div class="space-y-2">
-        <div v-for="t in tasks" :key="t.id" class="card">
-            <p>{{ t.title }} ({{ t.tokens }} 🪙)</p>
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <button @click="boost" class="bg-blue-600 p-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform">🚀 Boost</button>
+            <button @click="cashout" class="bg-emerald-600 p-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform">💰 Cashout</button>
+        </div>
 
-            <button v-if="t.status==='active'" @click="claimTask(t)" class="bg-white text-black px-3 py-1 rounded">
-                Klaar
-            </button>
+        <div class="card border-blue-500/20">
+            <p class="text-xs text-slate-400 uppercase font-bold mb-1">Gezamenlijke Pot</p>
+            <h2 class="text-2xl font-bold text-blue-400">{{ familyPot }} 🪙</h2>
+        </div>
 
-            <div v-if="role==='admin' && t.status==='pending'" class="flex gap-2 mt-2">
-                <button @click="approveTask(t)" class="bg-green-500 px-2">OK</button>
-                <button @click="rejectTask(t)" class="bg-red-500 px-2">X</button>
+        <h3 class="text-sm font-bold uppercase text-slate-500 mb-3 ml-1">Missies</h3>
+        <div class="space-y-3">
+            <div v-for="t in tasks" :key="t.id" class="card">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-bold">{{ t.title }}</p>
+                        <p class="text-xs text-slate-400">{{ t.tokens }} 🪙</p>
+                    </div>
+                    <button v-if="t.status === 'active' && role !== 'admin'" @click="claimTask(t)" class="bg-white text-black px-4 py-2 rounded-xl font-bold text-sm">
+                        Klaar
+                    </button>
+                </div>
+
+                <div v-if="role === 'admin' && t.status === 'pending'" class="flex gap-2 mt-4 pt-4 border-t border-white/5">
+                    <button @click="approveTask(t)" class="flex-1 bg-green-500 py-2 rounded-lg font-bold text-sm">Goedkeuren</button>
+                    <button @click="rejectTask(t)" class="flex-1 bg-red-500 py-2 rounded-lg font-bold text-sm">Afwijzen</button>
+                </div>
+            </div>
+            
+            <div v-if="tasks.length === 0" class="text-center py-10 text-slate-500 text-sm italic">
+                Geen missies gevonden...
             </div>
         </div>
     </div>
 
-</div>
-
-<div v-if="user && !familyId" class="text-red-400 mt-10">
-    Loading family...
-</div>
+    <div v-if="user && !familyId" class="text-center mt-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500 mx-auto mb-4"></div>
+        <p class="text-slate-400 italic">Squad Grid wordt geladen...</p>
+        <button @click="forceInit" class="mt-10 text-xs text-blue-500 underline">Duurt het te lang? Klik hier.</button>
+    </div>
 
 </div>
 
 <script>
-console.log("SCRIPT START");
-
 const firebaseConfig = {
-  apiKey:  "AIzaSyAGSSTZivu3OfKjdR-61BNy0WlXFeH9C80",
+  apiKey: "AIzaSyAGSSTZivu3OfKjdR-61BNy0WlXFeH9C80",
   authDomain: "familyreward-c4582.firebaseapp.com",
   projectId: "familyreward-c4582",
-  storageBucket: "familyreward-c4582.appspot.com", // 👈 FIX
+  storageBucket: "familyreward-c4582.appspot.com",
   messagingSenderId: "500697306700",
   appId: "1:500697306700:web:e812d2b9891c4d2f64c6e9"
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const db = firebase.firestore();
 const auth = firebase.auth();
-
 const { createApp, ref, onMounted } = Vue;
 
 createApp({
 setup() {
+    const user = ref(null);
+    const familyId = ref(null);
+    const role = ref('user');
+    const credits = ref(0);
+    const familyPot = ref(0);
+    const tasks = ref([]);
 
-console.log("VUE START");
-
-const user = ref(null);
-const familyId = ref(null);
-const role = ref('user');
-
-const credits = ref(0);
-const familyPot = ref(0);
-const tasks = ref([]);
-
-const login = async () => {
-    console.log("LOGIN CLICK");
-
-    try {
-        await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-    } catch (e) {
-        console.error("LOGIN ERROR:", e);
-        alert(e.message);
-    }
-};
-
-const init = async (u) => {
-    console.log("INIT USER:", u.uid);
-
-    try {
-        const q = await db.collection('families')
-            .where('member_uids', 'array-contains', u.uid)
-            .get();
-
-        if (q.empty) {
-            console.log("CREATE FAMILY");
-
-            await db.collection('families').doc(u.uid).set({
-                member_uids:[u.uid],
-                admin_uids:[u.uid],
-                familyPot:0
-            });
-
-            await db.collection('families')
-                .doc(u.uid)
-                .collection('members')
-                .doc(u.uid)
-                .set({ credits:0 });
-
-            familyId.value = u.uid;
-            role.value = 'admin';
-
-        } else {
-            const doc = q.docs[0];
-            familyId.value = doc.id;
-
-            const data = doc.data() || {};
-            const admins = data.admin_uids || [];
-
-            role.value = admins.includes(u.uid) ? 'admin':'user';
+    const login = async () => {
+        try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            await auth.signInWithPopup(provider);
+        } catch (e) {
+            alert("Login fout: " + e.message);
         }
+    };
 
-        startListeners();
+    const logout = () => auth.signOut().then(() => location.reload());
 
-    } catch(e){
-        console.error("INIT ERROR:", e);
-    }
-};
+    const init = async (u) => {
+        try {
+            // Zoek of de user in een squad zit
+            const q = await db.collection('families')
+                .where('member_uids', 'array-contains', u.uid)
+                .get();
 
-const startListeners = () => {
-    console.log("START LISTENERS");
-
-    const fRef = db.collection('families').doc(familyId.value);
-
-    fRef.onSnapshot(s=>{
-        const data = s.data();
-        if (data) {
-            familyPot.value = data.familyPot || 0;
-        }
-    });
-
-    fRef.collection('members')
-        .doc(user.value.uid)
-        .onSnapshot(s=>{
-            const data = s.data();
-            if (data) {
-                credits.value = data.credits || 0;
+            if (q.empty) {
+                // Maak een nieuwe squad met de UID van de user als ID (deterministisch)
+                const newSquadId = u.uid;
+                await db.collection('families').doc(newSquadId).set({
+                    member_uids: [u.uid],
+                    admin_uids: [u.uid],
+                    familyPot: 0,
+                    familyName: "Mijn Squad"
+                });
+                await db.collection('families').doc(newSquadId).collection('members').doc(u.uid).set({
+                    credits: 0,
+                    name: u.displayName || "Lid"
+                });
+                familyId.value = newSquadId;
+                role.value = 'admin';
+            } else {
+                const doc = q.docs[0];
+                familyId.value = doc.id;
+                role.value = doc.data().admin_uids.includes(u.uid) ? 'admin' : 'user';
             }
-        });
+            startListeners();
+        } catch (e) {
+            console.error("Init Error:", e);
+        }
+    };
 
-    fRef.collection('tasks')
-        .onSnapshot(s=>{
-            tasks.value = s.docs.map(d=>{
-                return { id:d.id, ...(d.data() || {}) };
-            });
-        });
-};
-
-const boost = async () => {
-    const val = parseInt(prompt("Hoeveel?"));
-    if (!val || val <=0) return;
-
-    try {
-        await db.runTransaction(async tx=>{
-            const fRef = db.collection('families').doc(familyId.value);
-            const mRef = fRef.collection('members').doc(user.value.uid);
-
-            tx.update(mRef,{credits:firebase.firestore.FieldValue.increment(-val)});
-            tx.update(fRef,{familyPot:firebase.firestore.FieldValue.increment(val)});
-        });
-    } catch(e){
-        console.error("BOOST ERROR:", e);
-    }
-};
-
-const cashout = async () => {
-    const val = credits.value;
-    if (val <=0) return;
-
-    try {
-        await db.collection('families')
-            .doc(familyId.value)
-            .collection('members')
-            .doc(user.value.uid)
-            .update({
-                credits:0,
-                pendingPayout:val
-            });
-    } catch(e){
-        console.error("CASHOUT ERROR:", e);
-    }
-};
-
-const claimTask = async (t) => {
-    try {
-        await db.collection('families')
-            .doc(familyId.value)
-            .collection('tasks')
-            .doc(t.id)
-            .update({
-                status:'pending',
-                claimedByUid:user.value.uid
-            });
-    } catch(e){
-        console.error("CLAIM ERROR:", e);
-    }
-};
-
-const approveTask = async (t) => {
-    try {
+    const startListeners = () => {
+        if (!familyId.value) return;
         const fRef = db.collection('families').doc(familyId.value);
 
-        await db.runTransaction(async tx=>{
-            const mRef = fRef.collection('members').doc(t.claimedByUid);
-
-            tx.update(mRef,{
-                credits:firebase.firestore.FieldValue.increment(t.tokens)
-            });
-
-            tx.update(fRef.collection('tasks').doc(t.id),{
-                status:'active',
-                claimedByUid:null
-            });
+        // Luister naar de Pot
+        fRef.onSnapshot(s => {
+            if (s.exists) familyPot.value = s.data().familyPot || 0;
         });
 
-    } catch(e){
-        console.error("APPROVE ERROR:", e);
-    }
-};
+        // Luister naar de Credits van de user
+        fRef.collection('members').doc(user.value.uid).onSnapshot(s => {
+            if (s.exists) credits.value = s.data().credits || 0;
+        });
 
-const rejectTask = async (t) => {
-    try {
-        await db.collection('families')
-            .doc(familyId.value)
-            .collection('tasks')
-            .doc(t.id)
-            .update({
-                status:'active',
-                claimedByUid:null
+        // Luister naar de Taken
+        fRef.collection('tasks').onSnapshot(s => {
+            tasks.value = s.docs.map(d => ({ id: d.id, ...d.data() }));
+        });
+    };
+
+    const boost = async () => {
+        const val = parseInt(prompt("Hoeveel 🪙 wil je doneren aan de pot?"));
+        if (!val || val <= 0 || val > credits.value) return;
+        try {
+            await db.runTransaction(async tx => {
+                const fRef = db.collection('families').doc(familyId.value);
+                const mRef = fRef.collection('members').doc(user.value.uid);
+                tx.update(mRef, { credits: firebase.firestore.FieldValue.increment(-val) });
+                tx.update(fRef, { familyPot: firebase.firestore.FieldValue.increment(val) });
             });
-    } catch(e){
-        console.error("REJECT ERROR:", e);
-    }
-};
+        } catch (e) { alert("Boost mislukt"); }
+    };
 
-onMounted(()=>{
-    console.log("MOUNTED");
+    const cashout = async () => {
+        if (credits.value <= 0) return;
+        if (!confirm(`Wil je ${credits.value} 🪙 laten uitbetalen?`)) return;
+        try {
+            await db.collection('families').doc(familyId.value).collection('members').doc(user.value.uid).update({
+                pendingPayout: credits.value,
+                credits: 0
+            });
+            alert("Verzoek ingediend!");
+        } catch (e) { alert("Cashout mislukt"); }
+    };
 
-    auth.onAuthStateChanged(u=>{
-        console.log("AUTH STATE:", u);
+    const claimTask = async (t) => {
+        try {
+            await db.collection('families').doc(familyId.value).collection('tasks').doc(t.id).update({
+                status: 'pending',
+                claimedByUid: user.value.uid
+            });
+        } catch (e) { console.error(e); }
+    };
 
-        if (u){
-            user.value = u;
-            init(u);
-        }
+    const approveTask = async (t) => {
+        try {
+            const fRef = db.collection('families').doc(familyId.value);
+            await db.runTransaction(async tx => {
+                tx.update(fRef.collection('members').doc(t.claimedByUid), {
+                    credits: firebase.firestore.FieldValue.increment(t.tokens)
+                });
+                tx.update(fRef.collection('tasks').doc(t.id), {
+                    status: 'active',
+                    claimedByUid: null
+                });
+            });
+        } catch (e) { console.error(e); }
+    };
+
+    const rejectTask = async (t) => {
+        await db.collection('families').doc(familyId.value).collection('tasks').doc(t.id).update({
+            status: 'active',
+            claimedByUid: null
+        });
+    };
+
+    onMounted(() => {
+        auth.onAuthStateChanged(u => {
+            if (u) {
+                user.value = u;
+                init(u);
+            }
+        });
     });
-});
 
-return {
-    user, familyId, role,
-    credits, familyPot, tasks,
-    login, boost, cashout,
-    claimTask, approveTask, rejectTask
-};
-
+    return {
+        user, familyId, role, credits, familyPot, tasks,
+        login, logout, boost, cashout, claimTask, approveTask, rejectTask,
+        forceInit: () => user.value && init(user.value)
+    };
 }
 }).mount('#app');
 </script>
-
 </body>
 </html>
